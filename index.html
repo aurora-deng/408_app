@@ -1,0 +1,3114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>研途备考管理 Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <style>
+        :root {
+            --bg: #f4f7f6;
+            --surface: #ffffff;
+            --surface-soft: #eef3f2;
+            --ink: #18211f;
+            --muted: #63716d;
+            --line: #dfe5e2;
+            --accent: #1f7a63;
+            --accent-dark: #12533f;
+            --warn: #b66a24;
+            --danger: #b64c4c;
+            --shadow: 0 8px 24px rgba(24, 33, 31, 0.06);
+            --sidebar-w: 240px;
+            --radius: 12px;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        button, input, textarea, select {
+            font: inherit;
+            border: none;
+            outline: none;
+        }
+        button {
+            cursor: pointer;
+            background: transparent;
+        }
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: var(--sidebar-w);
+            background: #17221f;
+            color: #f3f7f5;
+            padding: 24px 16px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 100;
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+        }
+        .sidebar-overlay.active {
+            display: block;
+        }
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-w);
+            padding: 24px;
+            transition: margin-left 0.3s ease;
+            width: 100%;
+        }
+        .main-content.expanded {
+            margin-left: 0;
+        }
+        .toggle-sidebar {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 101;
+            background: var(--accent);
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow);
+            transition: left 0.3s ease;
+        }
+        .sidebar:not(.collapsed)~.main-content .toggle-sidebar {
+            left: calc(var(--sidebar-w) + 16px);
+        }
+        .brand {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        .brand-mark {
+            width: 40px;
+            height: 40px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            font-weight: 900;
+            font-size: 18px;
+        }
+        .brand h1 {
+            font-size: 18px;
+        }
+        .brand p {
+            font-size: 12px;
+            color: #8a9994;
+            margin-top: 4px;
+        }
+        .nav {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+        .nav-item {
+            color: #b9c9c4;
+            padding: 10px 12px;
+            border-radius: 8px;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+        }
+        .nav-item:hover, .nav-item.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        .nav-item.active {
+            background: var(--accent);
+            box-shadow: 0 4px 12px rgba(31, 122, 99, 0.4);
+        }
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--line);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: var(--accent-dark);
+        }
+        .btn-ghost {
+            background: var(--surface-soft);
+            color: var(--accent-dark);
+        }
+        .btn-ghost:hover {
+            background: #dff0ea;
+        }
+        .btn-danger {
+            background: #fff1f1;
+            color: var(--danger);
+        }
+        .btn-danger:hover {
+            background: #ffe0e0;
+        }
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: inline-grid;
+            place-items: center;
+            border-radius: 50%;
+        }
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+        input[type="text"], input[type="number"], input[type="date"], select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            margin-bottom: 12px;
+        }
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        label {
+            font-size: 13px;
+            color: var(--muted);
+            display: block;
+            margin-bottom: 4px;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .badge-数学 { background: #2563eb; }
+        .badge-英语 { background: #dc2626; }
+        .badge-政治 { background: #d97706; }
+        .badge-408 { background: #7c3aed; }
+        .badge-综合 { background: #059669; }
+        .badge-其他 { background: #6b7280; }
+        .view {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .view.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .countdown-banner {
+            background: linear-gradient(135deg, #1f7a63 0%, #12533f 100%);
+            color: #fff;
+            padding: 20px;
+            border-radius: var(--radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 20px rgba(31, 122, 99, 0.25);
+            margin-bottom: 24px;
+        }
+        .countdown-days {
+            font-size: 48px;
+            font-weight: 900;
+            line-height: 1;
+        }
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f8faf9;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .task-meta {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+        /* ============= Win10 Calendar Style - Upgraded ============= */
+        .win-calendar {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 0;
+            background: var(--surface);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--line);
+        }
+        .cal-sidebar {
+            background: var(--bg);
+            padding: 20px 16px;
+            border-right: 1px solid var(--line);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .cal-year-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 0;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--ink);
+            transition: all 0.2s ease;
+        }
+        .cal-year-btn:hover {
+            background: rgba(31, 122, 99, 0.1);
+            color: var(--accent-dark);
+        }
+        .cal-year-btn.active {
+            background: var(--accent);
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(31, 122, 99, 0.25);
+        }
+        .cal-main {
+            padding: 24px;
+            background: #fff;
+        }
+        .cal-main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--line);
+        }
+        .cal-main-header h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--ink);
+            min-width: 140px;
+            text-align: center;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            text-align: center;
+        }
+        .cal-head {
+            font-weight: 600;
+            color: var(--muted);
+            padding: 8px 0;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .cal-day {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            font-size: 14px;
+            cursor: pointer;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--ink);
+            font-weight: 500;
+        }
+        .cal-day:hover {
+            background: var(--surface-soft);
+            transform: scale(1.1);
+            z-index: 1;
+        }
+        .cal-day.today {
+            background: var(--accent);
+            color: #fff;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(31, 122, 99, 0.4);
+            transform: scale(1.15);
+            border-radius: 12px;
+            font-size: 12px;
+            padding: 4px;
+        }
+        .cal-day.has-event::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            width: 6px;
+            height: 6px;
+            background: var(--warn);
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px var(--warn);
+        }
+        .cal-day.today.has-event::after {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px #fff;
+        }
+        .cal-day.other-month {
+            color: #d1d5db;
+        }
+        .cal-day.selected {
+            background: var(--accent-dark);
+            color: #fff;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(18, 83, 63, 0.3);
+        }
+        .event-list-panel {
+            margin-top: 24px;
+            border-top: 1px solid var(--line);
+            padding-top: 20px;
+        }
+        .event-item {
+            background: var(--surface-soft);
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid var(--accent);
+            transition: all 0.2s;
+        }
+        .event-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        /* Records & Category */
+        .category-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--line);
+        }
+        .filter-btn {
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            background: var(--surface);
+            color: var(--muted);
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent-dark);
+        }
+        .filter-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .subject-group {
+            margin-bottom: 12px;
+        }
+        .subject-group-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent-dark);
+        }
+        .record-item {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+        .record-item h4 {
+            font-size: 15px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .record-meta {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .tag {
+            border-radius: 999px;
+            background: var(--surface-soft);
+            color: var(--accent-dark);
+            padding: 4px 8px;
+            font-size: 12px;
+            margin-right: 4px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+        /* Viewer Dialog */
+        .viewer-dialog {
+            width: min(1180px, 96vw);
+            height: min(820px, 92vh);
+            padding: 0;
+            background: #0f1513;
+            color: #f7fbf9;
+            overflow: hidden;
+            border: none;
+            border-radius: 8px;
+        }
+        .viewer-dialog::backdrop {
+            background: rgba(10, 14, 13, 0.72);
+        }
+        .viewer-shell {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            height: 100%;
+        }
+        .viewer-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .viewer-actions .btn-ghost {
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #f7fbf9;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .viewer-stage {
+            position: relative;
+            min-height: 0;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .viewer-pager {
+            position: absolute;
+            top: 50%;
+            z-index: 100;
+            width: 40px;
+            height: 60px;
+            place-items: center;
+            transform: translateY(-50%);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            border: none;
+        }
+        .viewer-pager-left { left: 14px; }
+        .viewer-pager-right { right: 14px; }
+        .viewer-media {
+            max-width: 90%;
+            max-height: 90vh;
+            object-fit: contain;
+        }
+        .viewer-frame {
+            width: 90%;
+            height: 80vh;
+            border: none;
+            border-radius: 8px;
+            background: #fff;
+        }
+        dialog {
+            border: none;
+            border-radius: var(--radius);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            padding: 0;
+            width: min(500px, 90vw);
+        }
+        dialog::backdrop {
+            background: rgba(10, 14, 13, 0.6);
+            backdrop-filter: blur(4px);
+        }
+        .dialog-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .dialog-body {
+            padding: 20px;
+        }
+        /* School Card */
+        .school-card {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            background: #fff;
+        }
+        .school-card h4 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: var(--accent-dark);
+        }
+        .school-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+        .school-info strong {
+            color: var(--ink);
+        }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            .toggle-sidebar { left: 16px !important; }
+            .grid-2, .grid-3, .grid-4, .win-calendar { grid-template-columns: 1fr; }
+            .cal-sidebar { border-right: none; border-bottom: 1px solid var(--line); padding: 12px; }
+            .countdown-banner { flex-direction: column; text-align: center; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar">
+            <div class="brand"><span class="brand-mark">研</span>
+                <div>
+                    <h1>研途备考</h1>
+                    <p>任务 · 日历 · 分析</p>
+                </div>
+            </div>
+            <nav class="nav">
+                <button class="nav-item active" data-view="overview"><i class="fas fa-home"></i> 总览</button>
+                <button class="nav-item" data-view="timeline"><i class="fas fa-stream"></i> 时间周期表</button>
+                <button class="nav-item" data-view="mistakes"><i class="fas fa-times-circle"></i> 错题集</button>
+                <button class="nav-item" data-view="resources"><i class="fas fa-book"></i> 学习资料</button>
+                <button class="nav-item" data-view="papers"><i class="fas fa-file-alt"></i> 真题试卷</button>
+                <button class="nav-item" data-view="scores"><i class="fas fa-chart-line"></i> 成绩追踪</button>
+                <button class="nav-item" data-view="review"><i class="fas fa-pen-fancy"></i> 每日复盘</button>
+                <button class="nav-item" data-view="schools"><i class="fas fa-university"></i> 目标院校</button>
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <main class="main-content" id="mainContent">
+            <button class="toggle-sidebar" id="toggleSidebar"><i class="fas fa-bars"></i></button>
+            <!-- 1. 总览 -->
+            <section class="view active" id="view-overview">
+                <div class="countdown-banner">
+                    <div>
+                        <div style="font-size:14px; opacity:0.9">距离初试还剩</div>
+                        <div class="countdown-days" id="countdownDays">--</div>
+                        <div style="font-size:14px; opacity:0.9">天</div>
+                    </div>
+                    <div style="text-align:right">
+                        <select id="examYear" style="width:auto; background:rgba(255,255,255,0.2); color:#fff; border:none; padding:4px 8px; border-radius:4px;">
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027" selected>2027</option>
+                            <option value="2028">2028</option>
+                        </select>
+                        <div style="font-size:13px; margin-top:4px; opacity:0.8" id="examDateText">2027年12月21日</div>
+                    </div>
+                </div>
+                <div class="grid-4" id="statCards">
+                    <div class="card" style="padding:16px">
+                        <div style="color:var(--muted);font-size:12px">今日任务</div>
+                        <div style="font-size:24px;font-weight:700;margin-top:4px" id="statTodo">0</div>
+                    </div>
+                    <div class="card" style="padding:16px">
+                        <div style="color:var(--muted);font-size:12px">已完成</div>
+                        <div style="font-size:24px;font-weight:700;margin-top:4px;color:var(--accent)" id="statDone">0</div>
+                    </div>
+                    <div class="card" style="padding:16px">
+                        <div style="color:var(--muted);font-size:12px">最近总分</div>
+                        <div style="font-size:24px;font-weight:700;margin-top:4px" id="statScore">--</div>
+                    </div>
+                    <div class="card" style="padding:16px">
+                        <div style="color:var(--muted);font-size:12px">备考状态</div>
+                        <div style="font-size:24px;font-weight:700;margin-top:4px" id="statStatus">未开始</div>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">今日任务</div><button class="btn btn-primary btn-sm" onclick="openTaskDialog()"><i class="fas fa-plus"></i> 添加</button>
+                        </div>
+                        <div id="taskList"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">快捷操作</div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <button class="btn btn-ghost" style="width:100%" id="btnStartPrep" onclick="togglePrep('active')"><i class="fas fa-play"></i> 开始备考</button>
+                            <button class="btn btn-ghost" style="width:100%;display:none" id="btnPausePrep" onclick="togglePrep('paused')"><i class="fas fa-pause"></i> 暂停备考</button>
+                            <button class="btn btn-ghost" style="width:100%;display:none" id="btnResumePrep" onclick="togglePrep('active')"><i class="fas fa-play"></i> 继续备考</button>
+                            <button class="btn btn-danger" style="width:100%;display:none" id="btnExitPrep" onclick="showExitConfirm()"><i class="fas fa-stop"></i> 结束备考</button>
+                            <button class="btn btn-ghost" style="width:100%" onclick="showStatusDialog()"><i class="fas fa-cog"></i> 设置状态</button>
+                            <button class="btn btn-ghost" style="width:100%" onclick="showReminderSettings()"><i class="fas fa-bell"></i> 提醒设置</button>
+                            <button class="btn btn-ghost" style="width:100%" onclick="exportData()"><i class="fas fa-download"></i> 导出数据</button>
+                            <button class="btn btn-ghost" style="width:100%" onclick="showImportDialog()"><i class="fas fa-upload"></i> 导入数据</button>
+                            <button class="btn btn-danger" style="width:100%" onclick="showDeleteConfirm('deleteAllData', '确定要删除所有数据吗？此操作不可恢复！')"><i class="fas fa-trash"></i> 一键删除所有数据</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- 3. 时间周期表 -->
+            <section class="view" id="view-timeline">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">阶段周期表</div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-ghost" onclick="seedTasksFromTimeline()"><i class="fas fa-tasks"></i> 生成阶段任务</button>
+                            <button class="btn btn-primary" onclick="openTimelineDialog()"><i class="fas fa-plus"></i> 添加阶段</button>
+                            <button class="btn btn-danger" onclick="showDeleteConfirm('deleteAllTimelines', '确定要删除所有阶段吗？')"><i class="fas fa-trash"></i> 一键删除</button>
+                        </div>
+                    </div>
+                    <form id="timelineForm" style="margin-bottom:16px; padding:16px; background:var(--surface-soft); border-radius:8px;">
+                        <input type="hidden" name="id" />
+                        <div class="grid-2">
+                            <input type="text" name="range" placeholder="时间范围：2026.07-2026.09" required />
+                            <input type="text" name="title" placeholder="阶段标题" required />
+                        </div>
+                        <input type="text" name="subjects" placeholder="任务标签：英语,数学,408 (逗号分隔)" />
+                        <textarea name="goals" placeholder="阶段目标和结果要求" required></textarea>
+                        <div style="display:flex; gap:8px; justify-content:flex-end;">
+                            <button type="button" class="btn btn-ghost" onclick="resetTimelineForm()">取消编辑</button>
+                            <button type="submit" class="btn btn-primary">保存阶段</button>
+                        </div>
+                    </form>
+                    <div id="timelineList"></div>
+                </div>
+            </section>
+            <!-- 4. 错题集 -->
+            <section class="view" id="view-mistakes">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">错题集</div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-primary" onclick="openRecordDialog('mistakes')"><i class="fas fa-plus"></i> 添加错题</button>
+                            <button class="btn btn-danger" onclick="showDeleteConfirm('deleteAllMistakes', '确定要删除所有错题吗？')"><i class="fas fa-trash"></i> 一键删除</button>
+                        </div>
+                    </div>
+                    <div class="category-bar" id="mistakeFilter"></div>
+                    <div id="mistakeList"></div>
+                </div>
+            </section>
+            <!-- 5. 学习资料 -->
+            <section class="view" id="view-resources">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">学习笔记</div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-primary" onclick="openRecordDialog('notes')"><i class="fas fa-plus"></i> 添加笔记</button>
+                            <button class="btn btn-danger" onclick="showDeleteConfirm('deleteAllNotes', '确定要删除所有学习笔记吗？')"><i class="fas fa-trash"></i> 一键删除</button>
+                        </div>
+                    </div>
+                    <div class="category-bar" id="noteFilter"></div>
+                    <div id="noteList"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">电子资源</div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-primary" onclick="openRecordDialog('resources')"><i class="fas fa-plus"></i> 上传资源</button>
+                            <button class="btn btn-danger" onclick="showDeleteConfirm('deleteAllResources', '确定要删除所有电子资料吗？')"><i class="fas fa-trash"></i> 一键删除</button>
+                        </div>
+                    </div>
+                    <div class="category-bar" id="resourceFilter"></div>
+                    <div id="resourceList"></div>
+                </div>
+            </section>
+            <!-- 6. 真题试卷 -->
+            <section class="view" id="view-papers">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">真题试卷</div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-primary" onclick="openPaperDialog()"><i class="fas fa-plus"></i> 添加试卷</button>
+                            <button class="btn btn-danger" onclick="showDeleteConfirm('deleteAllPapers', '确定要删除所有试卷吗？')"><i class="fas fa-trash"></i> 一键删除</button>
+                        </div>
+                    </div>
+                    <div class="category-bar" id="paperFilter"></div>
+                    <div id="paperList"></div>
+                </div>
+            </section>
+            <!-- 7. 成绩追踪 -->
+            <section class="view" id="view-scores">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">成绩录入</div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-primary" onclick="openScoreDialog()"><i class="fas fa-plus"></i> 录入成绩</button>
+                            <button class="btn btn-danger" onclick="showDeleteConfirm('deleteAllScores', '确定要删除所有成绩记录吗？')"><i class="fas fa-trash"></i> 一键删除</button>
+                        </div>
+                    </div>
+                    <div style="height:300px; margin-bottom:20px;"><canvas id="totalScoreChart"></canvas></div>
+                    <div style="height:300px;"><canvas id="subjectScoreChart"></canvas></div>
+                    <div id="scoreList" style="margin-top:20px"></div>
+                </div>
+            </section>
+            <!-- 8. 每日复盘 -->
+            <section class="view" id="view-review">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">今日复盘</div>
+                        <button class="btn btn-danger" onclick="showDeleteConfirm('deleteAllReviews', '确定要删除所有复盘记录吗？')"><i class="fas fa-trash"></i> 一键删除</button>
+                    </div>
+                    <form id="reviewForm">
+                        <input type="hidden" name="id" />
+                        <label>今日心得体会</label><textarea name="insight" placeholder="回顾今天的学习状态..."></textarea>
+                        <label>明日改进计划</label><textarea name="plan" placeholder="明天需要调整的地方..."></textarea>
+                        <label>当前状态 (1-10分)</label><input type="number" name="status" min="1" max="10" value="7" />
+                        <input type="hidden" name="date" />
+                        <div style="display:flex; gap:8px;"><button type="button" class="btn btn-ghost" onclick="resetReviewForm()">取消编辑</button><button type="submit" class="btn btn-primary" style="flex:1">保存复盘</button></div>
+                    </form>
+                </div>
+                <div class="card" style="margin-top:16px">
+                    <div class="card-header">
+                        <div class="card-title">历史复盘</div>
+                    </div>
+                    <div id="reviewList"></div>
+                </div>
+            </section>
+            <!-- 9. 目标院校 -->
+            <section class="view" id="view-schools">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">目标院校库</div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-primary" onclick="openSchoolDialog()"><i class="fas fa-plus"></i> 添加院校</button>
+                            <button class="btn btn-danger" onclick="showDeleteConfirm('deleteAllSchools', '确定要删除所有院校吗？')"><i class="fas fa-trash"></i> 一键删除</button>
+                        </div>
+                    </div>
+                    <div id="schoolList"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <!-- 状态设置弹窗 -->
+    <dialog id="statusDialog">
+        <div class="dialog-header">
+            <h3>备考状态设置</h3><button class="btn btn-icon" onclick="this.closest('dialog').close()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="dialog-body">
+            <div style="margin-bottom:20px; padding:16px; background:var(--surface-soft); border-radius:8px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div id="statusIndicator" style="width:12px; height:12px; border-radius:50%; background:var(--muted);"></div>
+                    <div>
+                        <div style="font-size:12px; color:var(--muted);">当前状态</div>
+                        <div id="currentStatusText" style="font-weight:600; font-size:16px;">未开始</div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="font-weight:600; margin-bottom:8px; display:block;">状态操作</label>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <button class="btn btn-primary" style="width:100%" id="statusBtnStart" onclick="statusStart()"><i class="fas fa-play"></i> 开始备考</button>
+                    <button class="btn btn-ghost" style="width:100%" id="statusBtnPause" onclick="statusPause()"><i class="fas fa-pause"></i> 暂停备考</button>
+                    <button class="btn btn-ghost" style="width:100%" id="statusBtnResume" onclick="statusResume()"><i class="fas fa-play"></i> 继续备考</button>
+                    <button class="btn btn-ghost" style="width:100%" id="statusBtnRestart" onclick="statusRestart()"><i class="fas fa-redo"></i> 重新开始</button>
+                    <button class="btn btn-danger" style="width:100%" id="statusBtnExit" onclick="showExitConfirmFromStatus()"><i class="fas fa-stop"></i> 结束备考</button>
+                </div>
+            </div>
+            <button class="btn btn-ghost" style="width:100%;" onclick="this.closest('dialog').close()">关闭</button>
+        </div>
+    </dialog>
+    <!-- 统一删除确认弹窗 -->
+    <dialog id="deleteConfirmDialog">
+        <div class="dialog-header">
+            <h3 id="deleteConfirmTitle">确认删除</h3><button class="btn btn-icon" onclick="closeDeleteConfirm()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="dialog-body">
+            <p id="deleteConfirmMessage" style="margin-bottom:16px;">确定要删除吗？此操作不可恢复！</p>
+            <div id="deleteFirstConfirm" style="display:flex; gap:8px;">
+                <button class="btn btn-ghost" style="flex:1" onclick="closeDeleteConfirm()">取消</button>
+                <button class="btn btn-danger" style="flex:1" onclick="showSecondConfirm()">确认删除</button>
+            </div>
+            <div id="deleteSecondConfirm" style="display:none;">
+                <p style="color:var(--danger); font-weight:600; margin-bottom:12px;">⚠️ 再次确认：此操作不可恢复！</p>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn btn-ghost" style="flex:1" onclick="closeDeleteConfirm()">取消</button>
+                    <button class="btn btn-danger" style="flex:1" onclick="confirmDelete()">确认删除</button>
+                </div>
+            </div>
+        </div>
+    </dialog>
+    <!-- 结束备考确认弹窗 -->
+    <dialog id="exitConfirmDialog">
+        <div class="dialog-header">
+            <h3>结束备考</h3><button class="btn btn-icon" onclick="this.closest('dialog').close()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="dialog-body">
+            <p style="margin-bottom:16px;">确定要结束备考吗？</p>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-danger" style="flex:1" onclick="exitPrep(true)">清空数据并结束</button>
+                <button class="btn btn-primary" style="flex:1" onclick="exitPrep(false)">保留数据并结束</button>
+            </div>
+            <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="this.closest('dialog').close()">取消</button>
+        </div>
+    </dialog>
+    <!-- 提醒设置弹窗 -->
+    <dialog id="reminderDialog">
+        <div class="dialog-header">
+            <h3>提醒设置</h3><button class="btn btn-icon" onclick="this.closest('dialog').close()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="dialog-body">
+            <div style="margin-bottom:16px;">
+                <label style="display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" id="reminderEnabled" />
+                    <span>开启提醒功能</span>
+                </label>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="font-weight:600; margin-bottom:8px; display:block;">提醒时间设置</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="time" id="reminderMorning" value="06:00" />
+                    <input type="time" id="reminderNoon" value="12:00" />
+                    <input type="time" id="reminderEvening" value="20:00" />
+                </div>
+                <p style="font-size:12px; color:var(--muted); margin-top:4px;">早、中、晚三次提醒时间</p>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="font-weight:600; margin-bottom:8px; display:block;">提醒类型</label>
+                <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                    <input type="checkbox" id="reminderTasks" />
+                    <span>每日任务提醒</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                    <input type="checkbox" id="reminderReview" />
+                    <span>复盘提醒 (21:00)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" id="reminderSpecial" />
+                    <span>特殊日期提醒</span>
+                </label>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="font-weight:600; margin-bottom:8px; display:block;">邮件提醒设置</label>
+                <input type="email" id="reminderEmail" placeholder="输入接收提醒的邮箱地址" style="width:100%; margin-bottom:8px;" />
+                <p style="font-size:12px; color:var(--muted);">开启提醒后，将在设定时间向此邮箱发送提醒邮件</p>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="font-weight:600; margin-bottom:8px; display:block;">数据同步保存路径</label>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="text" id="syncSavePath" placeholder="未设置保存路径（点击选择文件夹）" style="flex:1;" readonly />
+                    <button class="btn btn-ghost" onclick="selectSyncFolder()" style="white-space:nowrap;"><i class="fas fa-folder-open"></i> 选择文件夹</button>
+                </div>
+                <p style="font-size:12px; color:var(--muted);">设置后，23:00数据同步将自动保存到该文件夹，无需手动操作</p>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="font-weight:600; margin-bottom:8px; display:block;">休息日设置</label>
+                <div style="display:flex; gap:8px;">
+                    <select id="restDayMode">
+                        <option value="auto">自动(5天学习2天休息)</option>
+                        <option value="custom">自定义休息日</option>
+                    </select>
+                </div>
+                <div id="customRestDays" style="display:none; margin-top:8px;">
+                    <label style="font-size:12px; margin-bottom:4px; display:block;">选择休息日</label>
+                    <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                        <label style="padding:4px 8px; background:var(--surface-soft); border-radius:4px;"><input type="checkbox" name="restDay" value="0" /> 周日</label>
+                        <label style="padding:4px 8px; background:var(--surface-soft); border-radius:4px;"><input type="checkbox" name="restDay" value="1" /> 周一</label>
+                        <label style="padding:4px 8px; background:var(--surface-soft); border-radius:4px;"><input type="checkbox" name="restDay" value="2" /> 周二</label>
+                        <label style="padding:4px 8px; background:var(--surface-soft); border-radius:4px;"><input type="checkbox" name="restDay" value="3" /> 周三</label>
+                        <label style="padding:4px 8px; background:var(--surface-soft); border-radius:4px;"><input type="checkbox" name="restDay" value="4" /> 周四</label>
+                        <label style="padding:4px 8px; background:var(--surface-soft); border-radius:4px;"><input type="checkbox" name="restDay" value="5" /> 周五</label>
+                        <label style="padding:4px 8px; background:var(--surface-soft); border-radius:4px;"><input type="checkbox" name="restDay" value="6" /> 周六</label>
+                    </div>
+                </div>
+                <p style="font-size:12px; color:var(--muted); margin-top:4px;">休息日不发送提醒，但有任务时仍会提醒</p>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-ghost" style="flex:1" onclick="this.closest('dialog').close()">取消</button>
+                <button class="btn btn-ghost" style="flex:1" onclick="testReminderEmail()"><i class="fas fa-paper-plane"></i> 测试邮件</button>
+                <button class="btn btn-ghost" style="flex:1" onclick="testSyncEmail()"><i class="fas fa-sync"></i> 测试同步</button>
+                <button class="btn btn-primary" style="flex:1" onclick="saveReminderSettings()">保存设置</button>
+            </div>
+        </div>
+    </dialog>
+    <!-- 数据导入弹窗 -->
+    <dialog id="importDialog">
+        <div class="dialog-header">
+            <h3>导入数据</h3><button class="btn btn-icon" onclick="this.closest('dialog').close()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="dialog-body">
+            <!-- 方式一：文件上传 -->
+            <div style="margin-bottom:16px;">
+                <label style="font-weight:600; margin-bottom:8px; display:block;">方式一：上传文件</label>
+                <input type="file" id="importFileInput" accept=".txt" style="display:none;" onchange="handleImportFile(this)" />
+                <button class="btn btn-ghost" style="width:100%;" onclick="document.getElementById('importFileInput').click()">
+                    <i class="fas fa-file-upload"></i> 选择txt文件导入
+                </button>
+                <p style="font-size:12px; color:var(--muted); margin-top:4px;">支持.txt格式的导出文件</p>
+            </div>
+            <!-- 分隔线 -->
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+                <div style="flex:1; height:1px; background:var(--line);"></div>
+                <span style="color:var(--muted); font-size:12px;">或者</span>
+                <div style="flex:1; height:1px; background:var(--line);"></div>
+            </div>
+            <!-- 方式二：粘贴数据 -->
+            <div style="margin-bottom:16px;">
+                <label style="font-weight:600; margin-bottom:8px; display:block;">方式二：粘贴数据</label>
+                <textarea id="importDataInput" placeholder="请粘贴从其他设备导出的数据..." rows="4" style="width:100%;"></textarea>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-ghost" style="flex:1" onclick="this.closest('dialog').close()">取消</button>
+                <button class="btn btn-primary" style="flex:1" onclick="importData()">导入数据</button>
+            </div>
+        </div>
+    </dialog>
+    <!-- 通用任务弹窗 -->
+    <dialog id="taskDialog">
+        <div class="dialog-header">
+            <h3>添加任务</h3><button class="btn btn-icon" onclick="this.closest('dialog').close()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="dialog-body">
+            <form id="taskForm">
+                <input type="hidden" name="id" />
+                <label>任务内容</label><input type="text" name="title" required placeholder="请输入任务内容" />
+                <div class="grid-2">
+                    <div><label>科目</label><select name="subject">
+                            <option value="数学">数学</option>
+                            <option value="英语">英语</option>
+                            <option value="政治">政治</option>
+                            <option value="408">408</option>
+                            <option value="综合">综合</option>
+                        </select></div>
+                    <div><label>优先级</label><select name="priority">
+                            <option value="高">高</option>
+                            <option value="中" selected>中</option>
+                            <option value="低">低</option>
+                        </select></div>
+                </div>
+                <label>日期</label><input type="date" name="date" required />
+                <label style="display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" name="useCurve" value="1" />
+                    <span>开启遗忘曲线复习</span>
+                    <span style="font-size:12px; color:var(--muted);">(完成后第1、3、7天自动提醒)</span>
+                </label>
+                <div style="display:flex; gap:8px; justify-content:flex-end;">
+                    <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+    <!-- 通用记录弹窗 -->
+    <dialog id="recordDialog">
+        <div class="dialog-header">
+            <h3 id="recordDialogTitle">添加记录</h3><button class="btn btn-icon" onclick="this.closest('dialog').close()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="dialog-body">
+            <form id="recordForm"><input type="hidden" name="id" /><input type="hidden" name="collection" /><label>分类路径/科目</label><input type="text" name="path" placeholder="如: 数学 > 高数 > 极限" required /><label>标题</label><input type="text" name="title" required /><label>详细内容</label><textarea name="content" rows="4"></textarea><label>附件 (可选)</label><input type="file" name="files" multiple accept="image/*,.pdf" />
+                <div style="display:flex; gap:8px; justify-content:flex-end;"><button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">取消</button><button type="submit" class="btn btn-primary">保存</button></div>
+            </form>
+        </div>
+    </dialog>
+    <!-- 试卷专用弹窗 -->
+    <dialog id="paperDialog">
+        <div class="dialog-header">
+            <h3>真题试卷</h3><button class="btn btn-icon" onclick="this.closest('dialog').close()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="dialog-body">
+            <form id="paperForm"><input type="hidden" name="id" />
+                <div class="grid-2">
+                    <div><label>科目</label><select name="subject">
+                            <option value="数学">数学</option>
+                            <option value="英语">英语</option>
+                            <option value="政治">政治</option>
+                            <option value="408">408</option>
+                        </select></div>
+                    <div><label>年份</label><input type="text" name="year" placeholder="如: 2024" required /></div>
+                </div><label>备注</label><textarea name="remark"></textarea><label>试卷 PDF (可选)</label><input type="file" name="file" accept=".pdf" />
+                <div style="display:flex; gap:8px; justify-content:flex-end;"><button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">取消</button><button type="submit" class="btn btn-primary">保存</button></div>
+            </form>
+        </div>
+    </dialog>
+    <!-- 成绩弹窗 -->
+    <dialog id="scoreDialog">
+        <div class="dialog-header">
+            <h3>录入成绩</h3><button class="btn btn-icon" onclick="this.closest('dialog').close()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="dialog-body">
+            <form id="scoreForm"><input type="hidden" name="id" /><label>考试名称</label><input type="text" name="name" placeholder="如: 第三次模考" required /><label>日期</label><input type="date" name="date" required />
+                <div class="grid-2">
+                    <div><label>数学</label><input type="number" name="math" /></div>
+                    <div><label>英语</label><input type="number" name="english" /></div>
+                    <div><label>政治</label><input type="number" name="politics" /></div>
+                    <div><label>408/专业课</label><input type="number" name="major" /></div>
+                </div>
+                <div style="display:flex; gap:8px; justify-content:flex-end;"><button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">取消</button><button type="submit" class="btn btn-primary">保存</button></div>
+            </form>
+        </div>
+    </dialog>
+    <!-- 目标院校弹窗 -->
+    <dialog id="schoolDialog">
+        <div class="dialog-header">
+            <h3>目标院校</h3><button class="btn btn-icon" onclick="this.closest('dialog').close()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="dialog-body">
+            <form id="schoolForm"><input type="hidden" name="id" />
+                <div class="grid-2">
+                    <div><label>学校名称</label><input type="text" name="name" required /></div>
+                    <div><label>复录比</label><input type="text" name="ratio" placeholder="如: 1-1.3" /></div>
+                    <div><label>初试占比</label><input type="text" name="preWeight" placeholder="如: >=50%" /></div>
+                    <div><label>复试占比</label><input type="text" name="reWeight" placeholder="如: 40%" /></div>
+                </div>
+                <label>初试科目</label><input type="text" name="preSubjects" placeholder="如: 政治 / 英一 / 数学 / 408" />
+                <label>复试科目</label><input type="text" name="reSubjects" placeholder="如: 学院复试公告为准" />
+                <label>备注说明</label><textarea name="formula" placeholder="最终成绩计算方式、招生人数、保护一志愿等信息"></textarea>
+                <div style="display:flex; gap:8px; justify-content:flex-end;"><button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">取消</button><button type="submit" class="btn btn-primary">保存</button></div>
+            </form>
+        </div>
+    </dialog>
+    <!-- 文件查看器 -->
+    <dialog id="viewerDialog" class="viewer-dialog">
+        <div class="viewer-shell">
+            <div class="viewer-top">
+                <div>
+                    <h3 id="viewerTitle" style="margin:0">资料查看</h3>
+                    <p id="viewerMeta" style="margin:0; font-size:12px; color:#aaa"></p>
+                </div>
+                <div class="viewer-actions" style="display:flex; gap:8px;">
+                    <button class="btn btn-ghost btn-sm" onclick="viewerZoom(-0.2)">缩小</button>
+                    <button class="btn btn-ghost btn-sm" onclick="viewerZoom(0.2)">放大</button>
+                    <button class="btn btn-primary btn-sm" onclick="document.getElementById('viewerDialog').close()">关闭</button>
+                </div>
+            </div>
+            <div class="viewer-stage" id="viewerStage">
+                <button class="viewer-pager viewer-pager-left" onclick="viewerPage(-1)"><i class="fas fa-chevron-left"></i></button>
+                <div id="viewerBody" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"></div>
+                <button class="viewer-pager viewer-pager-right" onclick="viewerPage(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </dialog>
+    <script>
+        // ================= 全局状态与存储 =================
+        const DB_NAME = 'KaoyanPrepDB';
+        const STORE_NAME = 'files';
+        const LOCAL_KEY = 'kaoyan-prep-state';
+        const SUBJECTS = ["数学", "英语", "政治", "408", "综合"];
+        
+        // 时间周期基础数据 (从参考代码导入)
+        const DEFAULT_PHASES = [
+            { id: "phase-1", range: "2026.07-2026.09", title: "初步阶段：每天 2.5h，打基础", subjects: ["英语核心1800", "高数基础", "计算机网络", "政治框架"], goals: "背完核心1800词，养成每周外刊阅读习惯；复习考研版高数；开始计算机网络；政治常考内容搭建。" },
+            { id: "phase-2", range: "2026.10-2026.12", title: "前期加速：每天 5h", subjects: ["英语阅读2005-2010", "数据结构", "线性代数", "高数大测"], goals: "完成词汇学习并形成背诵、阅读、写题方法；学完数据结构与计网；高数收尾，线代学完并大测。" },
+            { id: "phase-3", range: "2027.01-2027.03", title: "第一轮整合：每天 6-7h", subjects: ["英语翻译完形", "数学一轮", "操作系统", "机组", "政治一轮"], goals: "完成一轮408并套卷大测；数学一轮完成并两次完整试卷练习；政治知识框架收尾并开始复习。" },
+            { id: "phase-4", range: "2027.04-2027.06", title: "中期查缺补漏：每月四休", subjects: ["数学二轮", "408一轮", "政治专题", "作文素材", "导图一版"], goals: "数学二轮完成；408一轮和错题一刷；政治一轮专题完成；6月下旬第一次模拟考试，用成绩调整择校。" },
+            { id: "phase-5", range: "2027.07-2027.08", title: "高效刷题期：全天学习", subjects: ["408二轮", "数学三轮", "英语二轮", "政治二轮", "二轮模考"], goals: "近15年真题二刷；形成各科答题框架；8月末二轮模考并修正精细版思维导图。" },
+            { id: "phase-6", range: "2027.09-2027.10", title: "后期强化：每周一模考", subjects: ["政治三轮", "英语三轮", "408三轮", "数学四轮", "导图默写"], goals: "每周模考，周中随机科目试卷练习；各科薄弱点专项提升；思维导图默写后修订。" },
+            { id: "phase-7", range: "2027.11", title: "保持手感与调整心态", subjects: ["真题三刷", "肖八肖四", "预测卷", "每周模考"], goals: "完成最后一轮复习，继续每周模考；复盘真题错题；复习408名词与高频考点。" },
+            { id: "phase-8", range: "2027.12", title: "考前稳定期", subjects: ["错题重温", "公式本", "作文复习", "政治背诵", "高频考点"], goals: "保持原节奏，刷题量正常，以总结复习和错题重温为主，直到初试。" },
+            { id: "phase-9", range: "2028.02-2028.04", title: "查分与复试", subjects: ["查分", "复试准备", "院校信息复核"], goals: "2028年2月下旬查分；2028年3-4月准备院校复试，复核复试规则和最终成绩计算。" }
+        ];
+        
+        // 目标院校基础数据 (从参考代码导入)
+        const DEFAULT_SCHOOLS = [
+            { id: "school-1", name: "北京理工大学", ratio: "1-1.3", preWeight: ">=50%", preSubjects: "政治 / 英一 / 数学 / 408", reSubjects: "学院复试公告为准", reWeight: "待补充", formula: "重点冲刺；关注学院官网近年复试文件、招生人数、保护一志愿。" },
+            { id: "school-2", name: "中山大学", ratio: "1-1.3", preWeight: ">=50%", preSubjects: "数一方向", reSubjects: "待补充", reWeight: "待补充", formula: "中上985目标层级，后续根据模考成绩动态调整。" },
+            { id: "school-3", name: "南京信息工程大学", ratio: "待查", preWeight: ">=50%", preSubjects: "待补充", reSubjects: "待补充", reWeight: "待补充", formula: "当前最低标准备选，保留动态择校空间。" }
+        ];
+        
+        let state = loadState();
+        let chartTotal = null;
+        let chartSubject = null;
+        let currentViewer = { col: '', id: '', idx: 0, zoom: 1 };
+        
+        function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 9); }
+        function extractSubject(text) { if (!text) return "其他"; for (let s of SUBJECTS) { if (text.includes(s)) return s; } return "其他"; }
+        
+        function loadState() {
+            const saved = localStorage.getItem(LOCAL_KEY);
+            const def = {
+                deviceId: uid(),
+                prepStatus: 'not-started',
+                prepStart: '',
+                examYear: 2027,
+                tasks: [],
+                calendarEvents: [],
+                timelines: DEFAULT_PHASES,
+                mistakes: [],
+                notes: [],
+                resources: [],
+                papers: [],
+                scores: [],
+                reviews: [],
+                schools: DEFAULT_SCHOOLS
+            };
+            return saved ? { ...def, ...JSON.parse(saved) } : def;
+        }
+        
+        function saveState() {
+            try {
+                localStorage.setItem(LOCAL_KEY, JSON.stringify(state));
+            } catch (e) {
+                alert('存储不足！');
+            }
+        }
+        
+        // ================= IndexedDB =================
+        function openDB() {
+            return new Promise((res, rej) => {
+                const r = indexedDB.open(DB_NAME, 1);
+                r.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                r.onsuccess = e => res(e.target.result);
+                r.onerror = e => rej(e.target.error);
+            });
+        }
+        
+        async function saveFile(id, blob) {
+            const db = await openDB();
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).put({ id, blob });
+        }
+        
+        async function getFile(id) {
+            const db = await openDB();
+            return new Promise(res => {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const r = tx.objectStore(STORE_NAME).get(id);
+                r.onsuccess = () => res(r.result?.blob);
+            });
+        }
+        
+        async function deleteFile(id) {
+            const db = await openDB();
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).delete(id);
+        }
+        
+        const $ = id => document.getElementById(id);
+        
+        // ================= 侧边栏与路由 =================
+        function initSidebar() {
+            $('sidebarOverlay').onclick = () => {
+                $('sidebar').classList.remove('open');
+                $('sidebarOverlay').classList.remove('active');
+            };
+            $('toggleSidebar').onclick = () => {
+                if (window.innerWidth <= 768) {
+                    $('sidebar').classList.toggle('open');
+                    $('sidebarOverlay').classList.toggle('active');
+                } else {
+                    $('sidebar').classList.toggle('collapsed');
+                    $('mainContent').classList.toggle('expanded');
+                }
+            };
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.onclick = () => {
+                    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                    $(`view-${btn.dataset.view}`).classList.add('active');
+                    if (window.innerWidth <= 768) {
+                        $('sidebar').classList.remove('open');
+                        $('sidebarOverlay').classList.remove('active');
+                    }
+                    renderView(btn.dataset.view);
+                };
+            });
+        }
+        
+        function renderView(v) {
+            if (v === 'overview') renderOverview();
+            if (v === 'timeline') renderTimeline();
+            if (v === 'scores') renderScores();
+            if (v === 'review') renderReview();
+            if (v === 'mistakes') renderRecords('mistakes', $('mistakeList'), $('mistakeFilter'));
+            if (v === 'resources') {
+                renderRecords('notes', $('noteList'), $('noteFilter'));
+                renderRecords('resources', $('resourceList'), $('resourceFilter'));
+            }
+            if (v === 'papers') renderPapers();
+            if (v === 'schools') renderSchools();
+        }
+        
+        // ================= 通用分类与记录渲染 =================
+        function renderFilterBar(container, records, pathField) {
+            let counts = { all: records.length };
+            SUBJECTS.forEach(s => counts[s] = 0);
+            let oc = 0;
+            records.forEach(r => {
+                let sub = extractSubject(r[pathField]);
+                if (counts[sub] !== undefined) counts[sub]++;
+                else oc++;
+            });
+            counts["其他"] = oc;
+            let html = `<button class="filter-btn active" onclick="filterRecords(this, 'all')">全部 (${counts.all})</button>`;
+            SUBJECTS.forEach(s => { if (counts[s] > 0) html += `<button class="filter-btn" onclick="filterRecords(this, '${s}')">${s} (${counts[s]})</button>`; });
+            if (oc > 0) html += `<button class="filter-btn" onclick="filterRecords(this, '其他')">其他 (${oc})</button>`;
+            container.innerHTML = html;
+        }
+        
+        window.filterRecords = function (btn, key) {
+            btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            btn.parentElement.dataset.activeFilter = key;
+            const listContainer = btn.parentElement.nextElementSibling;
+            const col = listContainer.dataset.collection;
+            const pathField = (col === 'notes' || col === 'resources') ? 'path' : (col === 'papers' ? 'subject' : 'path');
+            renderRecordList(listContainer, state[col], pathField, key);
+        }
+        
+        function renderRecords(col, listCon, filterCon) {
+            const pathField = (col === 'notes' || col === 'resources') ? 'path' : (col === 'papers' ? 'subject' : 'path');
+            listCon.dataset.collection = col;
+            renderFilterBar(filterCon, state[col], pathField);
+            renderRecordList(listCon, state[col], pathField, 'all');
+        }
+        
+        // 获取列表容器的ID（处理特殊情况）
+        function getListContainerId(col) {
+            if (col === 'mistakes') return 'mistakeList';
+            if (col === 'notes') return 'noteList';
+            if (col === 'resources') return 'resourceList';
+            if (col === 'papers') return 'paperList';
+            return col + 'List';
+        }
+        
+        // 获取过滤器容器的ID（处理特殊情况）
+        function getFilterContainerId(col) {
+            if (col === 'mistakes') return 'mistakeFilter';
+            if (col === 'notes') return 'noteFilter';
+            if (col === 'resources') return 'resourceFilter';
+            if (col === 'papers') return 'paperFilter';
+            return col + 'Filter';
+        }
+        
+        // 重新渲染指定集合
+        function refreshRecords(col) {
+            const listId = getListContainerId(col);
+            const filterId = getFilterContainerId(col);
+            const listCon = $(listId);
+            const filterCon = $(filterId);
+            // 只有当DOM元素存在时才渲染（用户可能不在该视图）
+            if (listCon && filterCon) {
+                renderRecords(col, listCon, filterCon);
+            }
+        }
+        
+        function renderRecordList(container, records, pathField, filter) {
+            let filtered = filter === 'all' ? records : records.filter(r => extractSubject(r[pathField]) === filter);
+            if (!filtered.length) {
+                container.innerHTML = '<div style="color:var(--muted); text-align:center; padding:20px;">暂无记录</div>';
+                return;
+            }
+            if (filter === 'all') {
+                let groups = {};
+                let groupOrder = [...SUBJECTS, '其他'];
+                filtered.forEach(r => {
+                    let sub = extractSubject(r[pathField]);
+                    if (!groups[sub]) groups[sub] = [];
+                    groups[sub].push(r);
+                });
+                let html = '';
+                groupOrder.forEach(sub => {
+                    if (!groups[sub] || !groups[sub].length) return;
+                    html += `<div class="subject-group"><div class="subject-group-header"><span class="badge badge-${sub}">${sub}</span> ${sub} (${groups[sub].length})</div>`;
+                    groups[sub].forEach(r => html += renderRecordCard(r, sub));
+                    html += `</div>`;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = filtered.map(r => renderRecordCard(r, filter)).join('');
+            }
+        }
+        
+        function renderRecordCard(r, sub) {
+            const fileCount = r.files?.length || (r.fileId ? 1 : 0);
+            return `<div class="record-item">
+                <h4><span class="badge badge-${sub}">${sub}</span> ${r.title}</h4>
+                <div class="record-meta">${r.path || r.subject || ''} · ${r.date} · ${fileCount}个附件</div>
+                <div style="margin-top:8px; display:flex; gap:8px;">
+                    ${fileCount > 0 ? `<button class="btn btn-primary btn-sm" onclick="openViewer('${r.id}')"><i class="fas fa-eye"></i> 查看</button>` : ''}
+                    ${fileCount > 0 ? `<button class="btn btn-ghost btn-sm" onclick="downloadRecord('${r.id}')"><i class="fas fa-download"></i> 下载</button>` : ''}
+                    <button class="btn btn-ghost btn-sm" onclick="editRecord('${r.id}')"><i class="fas fa-edit"></i> 修改</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteItem('${r.id}')"><i class="fas fa-trash"></i> 删除</button>
+                </div>
+            </div>`;
+        }
+        
+        // ================= 查看器功能 =================
+        window.openViewer = async function (id) {
+            let rec = findRecord(id);
+            if (!rec) return;
+            let files = rec.files || [];
+            if (rec.fileId) files.push({ id: rec.fileId, name: rec.title + '.pdf', type: 'application/pdf' });
+            if (!files.length) return;
+            currentViewer = { id, idx: 0, zoom: 1 };
+            $('viewerDialog').showModal();
+            renderViewerMedia();
+        };
+        
+        window.viewerPage = function (step) {
+            let rec = findRecord(currentViewer.id);
+            let files = rec.files || (rec.fileId ? [{ id: rec.fileId }] : []);
+            currentViewer.idx = (currentViewer.idx + step + files.length) % files.length;
+            currentViewer.zoom = 1;
+            renderViewerMedia();
+        };
+        
+        window.viewerZoom = function (step) {
+            currentViewer.zoom += step;
+            renderViewerMedia();
+        };
+        
+        async function renderViewerMedia() {
+            let rec = findRecord(currentViewer.id);
+            let files = rec.files || [];
+            if (rec.fileId) files.push({ id: rec.fileId, name: '试卷.pdf', type: 'application/pdf' });
+            let file = files[currentViewer.idx];
+            if (!file) return;
+            $('viewerTitle').textContent = rec.title;
+            $('viewerMeta').textContent = `${currentViewer.idx + 1} / ${files.length} - ${file.name}`;
+            const blob = await getFile(file.id);
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const body = $('viewerBody');
+            if (file.type.startsWith('image/')) body.innerHTML = `<img class="viewer-media" src="${url}" style="transform:scale(${currentViewer.zoom})" />`;
+            else body.innerHTML = `<iframe class="viewer-frame" src="${url}" style="transform:scale(${currentViewer.zoom})"></iframe>`;
+        }
+        
+        window.downloadRecord = async function (id) {
+            let rec = findRecord(id);
+            let files = rec.files || [];
+            if (rec.fileId) files.push({ id: rec.fileId, name: rec.title + '.pdf' });
+            for (let f of files) {
+                const blob = await getFile(f.id);
+                if (blob) downloadBlob(f.name, blob);
+            }
+        };
+        
+        // ================= 真题试卷 =================
+        function renderPapers() { renderRecords('papers', $('paperList'), $('paperFilter')); }
+        
+        function openPaperDialog(id = null) {
+            const form = $('paperForm');
+            form.reset();
+            form.querySelector('[name=id]').value = '';
+            if (id) {
+                const p = state.papers.find(x => x.id === id);
+                if (p) fillForm(form, p);
+            }
+            $('paperDialog').showModal();
+        }
+        
+        $('paperForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const data = Object.fromEntries(fd.entries());
+            const file = fd.get('file');
+            if (!data.id) {
+                data.id = uid();
+                data.date = new Date().toISOString().slice(0, 10);
+                if (file.name) { data.fileId = uid(); await saveFile(data.fileId, file); }
+                data.files = [];
+                state.papers.unshift(data);
+            } else {
+                const idx = state.papers.findIndex(x => x.id === data.id);
+                if (file.name) { data.fileId = uid(); await saveFile(data.fileId, file); }
+                else { data.fileId = state.papers[idx].fileId; }
+                data.files = state.papers[idx].files || [];
+                data.date = state.papers[idx].date;
+                state.papers[idx] = data;
+            }
+            saveState();
+            $('paperDialog').close();
+            renderPapers();
+        };
+        
+        // ================= 通用记录 CRUD =================
+        function openRecordDialog(col, id = null) {
+            const form = $('recordForm');
+            form.reset();
+            form.querySelector('[name=id]').value = '';
+            form.querySelector('[name=collection]').value = col;
+            $('recordDialogTitle').textContent = {
+                mistakes: '添加错题',
+                notes: '添加笔记',
+                resources: '上传资源'
+            }[col];
+            if (id) {
+                const r = state[col].find(x => x.id === id);
+                if (r) fillForm(form, r);
+            }
+            $('recordDialog').showModal();
+        }
+        
+        $('recordForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const data = Object.fromEntries(fd.entries());
+            const col = data.collection;
+            const isNew = !data.id;
+            const files = fd.getAll('files').filter(f => f.name);
+            const storedFiles = [];
+            for (let f of files) {
+                const fid = uid();
+                await saveFile(fid, f);
+                storedFiles.push({ id: fid, name: f.name, type: f.type });
+            }
+            if (!isNew) {
+                const idx = state[col].findIndex(x => x.id === data.id);
+                if (idx >= 0) {
+                    storedFiles.push(...(state[col][idx].files || []));
+                    data.date = state[col][idx].date;
+                }
+                state[col][idx] = { ...data, files: storedFiles };
+            } else {
+                data.id = uid();
+                data.date = new Date().toISOString().slice(0, 10);
+                data.files = storedFiles;
+                state[col].unshift(data);
+            }
+            saveState();
+            $('recordDialog').close();
+            refreshRecords(col);
+        };
+        
+        function editRecord(id) {
+            const { record, col } = findRecordWithCol(id);
+            if (record) openRecordDialog(col, id);
+        }
+        
+        window.deleteItem = function (id) {
+            const { record, col } = findRecordWithCol(id);
+            if (!record || !confirm('确定要删除吗？')) return;
+            state[col] = state[col].filter(x => x.id !== id);
+            saveState();
+            refreshRecords(col);
+        };
+        
+        function findRecord(id) {
+            for (let col of ['mistakes', 'notes', 'resources', 'papers']) {
+                const r = state[col].find(x => x.id === id);
+                if (r) return r;
+            }
+            return null;
+        }
+        
+        function findRecordWithCol(id) {
+            for (let col of ['mistakes', 'notes', 'resources', 'papers']) {
+                const r = state[col].find(x => x.id === id);
+                if (r) return { record: r, col };
+            }
+            return { record: null, col: '' };
+        }
+        
+        // ================= 目标院校管理 =================
+        function renderSchools() {
+            if (!state.schools.length) {
+                $('schoolList').innerHTML = '<div style="color:var(--muted); text-align:center; padding:20px;">暂无目标院校</div>';
+                return;
+            }
+            $('schoolList').innerHTML = state.schools.map(s => `
+                <div class="school-card">
+                    <h4><i class="fas fa-university" style="color:var(--accent); margin-right:8px"></i> ${s.name}</h4>
+                    <div class="school-info">
+                        <span><strong>复录比:</strong> ${s.ratio || '待补充'}</span>
+                        <span><strong>初试占比:</strong> ${s.preWeight || '待补充'}</span>
+                        <span><strong>复试占比:</strong> ${s.reWeight || '待补充'}</span>
+                    </div>
+                    <div class="school-info">
+                        <span><strong>初试科目:</strong> ${s.preSubjects || '待补充'}</span>
+                        <span><strong>复试科目:</strong> ${s.reSubjects || '待补充'}</span>
+                    </div>
+                    ${s.formula ? `<p style="margin-top:8px; font-size:13px; color:var(--muted)">${s.formula}</p>` : ''}
+                    <div style="margin-top:12px; display:flex; gap:8px;">
+                        <button class="btn btn-ghost btn-sm" onclick="editSchool('${s.id}')"><i class="fas fa-edit"></i> 修改</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteSchool('${s.id}')"><i class="fas fa-trash"></i> 删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function openSchoolDialog(id = null) {
+            const form = $('schoolForm');
+            form.reset();
+            form.querySelector('[name=id]').value = '';
+            if (id) {
+                const s = state.schools.find(x => x.id === id);
+                if (s) fillForm(form, s);
+            }
+            $('schoolDialog').showModal();
+        }
+        
+        window.editSchool = function (id) { openSchoolDialog(id); };
+        
+        window.deleteSchool = function (id) {
+            if (!confirm('确定要删除此院校吗？')) return;
+            state.schools = state.schools.filter(x => x.id !== id);
+            saveState();
+            renderSchools();
+        };
+        
+        $('schoolForm').onsubmit = (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const data = Object.fromEntries(fd.entries());
+            if (!data.id) {
+                data.id = uid();
+                state.schools.push(data);
+            } else {
+                const idx = state.schools.findIndex(x => x.id === data.id);
+                if (idx >= 0) state.schools[idx] = data;
+            }
+            saveState();
+            $('schoolDialog').close();
+            renderSchools();
+        };
+        
+        // ================= 时间周期表功能 =================
+        // 辅助函数：解析时间范围字符串
+        function parseRange(rangeStr) {
+            if (!rangeStr) return { startNum: 0, endNum: 0 };
+            const parts = rangeStr.split('-');
+            const startStr = parts[0].trim();
+            const endStr = (parts[1] || parts[0]).trim();
+            const parseNum = (str) => {
+                const p = str.split('.');
+                if (p.length >= 2) return parseInt(p[0]) * 100 + parseInt(p[1]);
+                return parseInt(p[0]) * 100;
+            };
+            return {
+                startNum: parseNum(startStr),
+                endNum: parseNum(endStr)
+            };
+        }
+        function renderTimeline() {
+            // 完善3：排序逻辑 - 根据起始时间升序（最近的在最上面），起始相同则按终止时间升序
+            state.timelines.sort((a, b) => {
+                const ra = parseRange(a.range);
+                const rb = parseRange(b.range);
+                if (ra.startNum !== rb.startNum) {
+                    return ra.startNum - rb.startNum;
+                }
+                return ra.endNum - rb.endNum;
+            });
+            saveState();
+            if (!state.timelines.length) {
+                $('timelineList').innerHTML = '<div style="color:var(--muted); text-align:center; padding:20px;">暂无阶段规划</div>';
+                return;
+            }
+            $('timelineList').innerHTML = state.timelines.map(t => `
+                <div style="border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:12px; background:#fff; ${t.completed ? 'opacity: 0.6;' : ''}">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div style="flex:1;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="color:var(--accent); font-weight:600; font-size:14px;">${t.range}</span>
+                                <span style="font-size:12px; padding:2px 8px; border-radius:4px; color:#fff; background:${t.completed ? 'var(--muted)' : 'var(--warn)'}">${t.completed ? '已完成' : '待完成'}</span>
+                            </div>
+                            <h4 style="margin-top:6px; font-size:16px; ${t.completed ? 'text-decoration: line-through;' : ''}">${t.title}</h4>
+                            <p style="margin-top:8px; font-size:13px; color:var(--muted); line-height:1.6">${t.goals}</p>
+                            <div style="margin-top:10px;">
+                                ${(t.subjects || []).map(s => `<span class="tag">${s}</span>`).join('')}
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px; margin-left:12px; flex-shrink: 0;">
+                            ${!t.completed ? `<button class="btn btn-primary btn-sm" onclick="completeTimeline('${t.id}')"><i class="fas fa-check"></i> 完成</button>` : ''}
+                            <button class="btn btn-ghost btn-sm" onclick="editTimeline('${t.id}')"><i class="fas fa-edit"></i> 修改</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteTimeline('${t.id}')"><i class="fas fa-trash"></i> 删除</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        function openTimelineDialog(id = null) {
+            const form = $('timelineForm');
+            form.reset();
+            form.querySelector('[name=id]').value = '';
+            if (id) {
+                const t = state.timelines.find(x => x.id === id);
+                if (t) {
+                    fillForm(form, t);
+                    form.querySelector('[name=subjects]').value = (t.subjects || []).join(',');
+                }
+            }
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        window.editTimeline = function (id) { openTimelineDialog(id); };
+        window.resetTimelineForm = function () {
+            const form = $('timelineForm');
+            form.reset();
+            form.querySelector('[name=id]').value = '';
+        };
+        window.deleteTimeline = function (id) {
+            if (!confirm('确定删除此阶段？')) return;
+            state.timelines = state.timelines.filter(x => x.id !== id);
+            saveState();
+            renderTimeline();
+        };
+        // 完善2：标记阶段完成功能
+        window.completeTimeline = function (id) {
+            if (!confirm('确定将此阶段标记为已完成吗？')) return;
+            const t = state.timelines.find(x => x.id === id);
+            if (t) {
+                t.completed = true;
+                saveState();
+                renderTimeline();
+                // 同时更新最近时间段的阶段任务
+                seedTasksFromTimeline();
+            }
+        };
+        // 完善1：仅生成当前最近时间段且未完成的阶段任务
+        window.seedTasksFromTimeline = function () {
+            if (!state.timelines.length) {
+                alert('请先添加阶段规划！');
+                return;
+            }
+            const now = new Date();
+            const nowNum = now.getFullYear() * 100 + (now.getMonth() + 1);
+            let minDist = Infinity;
+            let currentPhases = [];
+            // 筛选出当前时间最近（正在进行或即将开始）的阶段，包含时间重合情况
+            state.timelines.forEach(phase => {
+                if (phase.completed) return; // 忽略已完成的
+                const ra = parseRange(phase.range);
+                let dist;
+                if (nowNum >= ra.startNum && nowNum <= ra.endNum) {
+                    dist = 0; // 当前正在进行
+                } else if (nowNum < ra.startNum) {
+                    dist = ra.startNum - nowNum; // 未来即将开始
+                } else {
+                    dist = Infinity; // 已经过去
+                }
+                if (dist < minDist) {
+                    minDist = dist;
+                    currentPhases = [phase];
+                } else if (dist === minDist && dist !== Infinity) {
+                    currentPhases.push(phase); // 距离相同则视为重合阶段同时生成
+                }
+            });
+            if (currentPhases.length === 0 || minDist === Infinity) {
+                alert('没有可生成的未完成阶段任务！');
+                return;
+            }
+            const today = formatDate(new Date());
+            let count = 0;
+            currentPhases.forEach(phase => {
+                (phase.subjects || []).forEach(subject => {
+                    const task = {
+                        id: uid(),
+                        title: `${phase.title}：${subject}`,
+                        subject: extractSubject(subject),
+                        priority: '中',
+                        date: today,
+                        done: false,
+                        fromPhase: phase.range
+                    };
+                    // 避免重复添加
+                    if (!state.tasks.some(t => t.title === task.title && t.fromPhase === task.fromPhase)) {
+                        state.tasks.push(task);
+                        count++;
+                    }
+                });
+            });
+            saveState();
+            alert(`已生成 ${count} 个任务！`);
+            renderOverview();
+        };
+        $('timelineForm').onsubmit = (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const data = Object.fromEntries(fd.entries());
+            data.subjects = data.subjects ? data.subjects.split(',').map(s => s.trim()) : [];
+            if (!data.id) {
+                data.id = uid();
+                data.completed = false; // 新增阶段默认未完成
+                state.timelines.push(data);
+            } else {
+                const idx = state.timelines.findIndex(x => x.id === data.id);
+                if (idx >= 0) {
+                    data.completed = state.timelines[idx].completed || false; // 保留原完成状态
+                    state.timelines[idx] = data;
+                }
+            }
+            saveState();
+            resetTimelineForm();
+            renderTimeline();
+        };
+        
+        // ================= 成绩追踪功能 =================
+        function renderScores() {
+            renderScoreCharts();
+            renderScoreList();
+        }
+        
+        function renderScoreCharts() {
+            const sorted = [...state.scores].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const labels = sorted.map(s => s.date);
+            const totals = sorted.map(s => {
+                return (parseInt(s.math) || 0) + (parseInt(s.english) || 0) + 
+                       (parseInt(s.politics) || 0) + (parseInt(s.major) || 0);
+            });
+            if (chartTotal) chartTotal.destroy();
+            chartTotal = new Chart($('totalScoreChart'), {
+                type: 'line',
+                data: { labels, datasets: [{
+                    label: '总分',
+                    data: totals,
+                    borderColor: '#1f7a63',
+                    backgroundColor: 'rgba(31, 122, 99, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointHoverRadius: 10
+                }]},
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true } },
+                    scales: {
+                        y: { min: 0, max: 500, ticks: { stepSize: 50 } }
+                    }
+                }
+            });
+            if (chartSubject) chartSubject.destroy();
+            chartSubject = new Chart($('subjectScoreChart'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: '数学', data: sorted.map(s => parseInt(s.math) || null), borderColor: '#2563eb' },
+                        { label: '英语', data: sorted.map(s => parseInt(s.english) || null), borderColor: '#dc2626' },
+                        { label: '政治', data: sorted.map(s => parseInt(s.politics) || null), borderColor: '#d97706' },
+                        { label: '408', data: sorted.map(s => parseInt(s.major) || null), borderColor: '#7c3aed' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true } },
+                    scales: { y: { min: 0, max: 150, ticks: { stepSize: 30 } } }
+                }
+            });
+        }
+        
+        function renderScoreList() {
+            if (!state.scores.length) {
+                $('scoreList').innerHTML = '<div style="color:var(--muted); text-align:center; padding:20px;">暂无成绩记录</div>';
+                return;
+            }
+            $('scoreList').innerHTML = state.scores.map(s => {
+                const total = (parseInt(s.math) || 0) + (parseInt(s.english) || 0) + 
+                             (parseInt(s.politics) || 0) + (parseInt(s.major) || 0);
+                return `
+                    <div style="border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <span style="font-weight:600">${s.name}</span>
+                                <span style="color:var(--muted); font-size:12px; margin-left:8px">${s.date}</span>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <span style="font-size:18px; font-weight:700; color:var(--accent)">${total}</span>
+                                <button class="btn btn-danger btn-sm" onclick="deleteScore('${s.id}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:16px; margin-top:8px; font-size:13px;">
+                            <span>数学: ${s.math || '--'}</span>
+                            <span>英语: ${s.english || '--'}</span>
+                            <span>政治: ${s.politics || '--'}</span>
+                            <span>408: ${s.major || '--'}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function openScoreDialog(id = null) {
+            const form = $('scoreForm');
+            form.reset();
+            form.querySelector('[name=id]').value = '';
+            if (id) {
+                const s = state.scores.find(x => x.id === id);
+                if (s) fillForm(form, s);
+            }
+            $('scoreDialog').showModal();
+        }
+        
+        window.deleteScore = function (id) {
+            if (!confirm('确定删除此成绩？')) return;
+            state.scores = state.scores.filter(x => x.id !== id);
+            saveState();
+            renderScores();
+        };
+        
+        $('scoreForm').onsubmit = (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const data = Object.fromEntries(fd.entries());
+            if (!data.id) {
+                data.id = uid();
+                state.scores.push(data);
+            } else {
+                const idx = state.scores.findIndex(x => x.id === data.id);
+                if (idx >= 0) state.scores[idx] = data;
+            }
+            saveState();
+            $('scoreDialog').close();
+            renderScores();
+        };
+        
+        // ================= 每日复盘功能 =================
+        function renderReview() {
+            $('reviewForm').date.value = new Date().toISOString().slice(0, 10);
+            $('reviewList').innerHTML = state.reviews.map(r => `
+                <div class="record-item">
+                    <h4>${r.date} <span style="font-weight:400; font-size:12px; color:var(--muted)">状态: ${r.status}/10</span></h4>
+                    <p style="font-size:13px; margin-top:4px"><strong>心得:</strong> ${r.insight || ''}</p>
+                    <p style="font-size:13px; margin-top:2px"><strong>计划:</strong> ${r.plan || ''}</p>
+                    <div style="margin-top:8px; display:flex; gap:8px;">
+                        <button class="btn btn-ghost btn-sm" onclick="editReview('${r.id}')"><i class="fas fa-edit"></i> 修改</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteReview('${r.id}')"><i class="fas fa-trash"></i> 删除</button>
+                    </div>
+                </div>
+            `).join('') || '<div style="color:var(--muted); text-align:center; padding:20px;">暂无复盘记录</div>';
+        }
+        
+        window.editReview = function (id) { 
+            const r = state.reviews.find(x => x.id === id); 
+            if (r) fillForm($('reviewForm'), r); 
+        }
+        
+        window.resetReviewForm = function () { 
+            $('reviewForm').reset(); 
+            $('reviewForm').querySelector('[name=id]').value = ''; 
+            $('reviewForm').date.value = new Date().toISOString().slice(0, 10); 
+        }
+        
+        window.deleteReview = function (id) {
+            if (confirm('确定要删除这条复盘记录吗？')) {
+                state.reviews = state.reviews.filter(r => r.id !== id);
+                saveState();
+                renderReview();
+            }
+        };
+        
+        $('reviewForm').onsubmit = (e) => {
+            e.preventDefault(); 
+            const data = Object.fromEntries(new FormData(e.target));
+            if (!data.id) { 
+                data.id = uid(); 
+                state.reviews.unshift(data); 
+            } else { 
+                const idx = state.reviews.findIndex(r => r.id === data.id); 
+                state.reviews[idx] = data; 
+            }
+            saveState(); 
+            resetReviewForm(); 
+            renderReview();
+        };
+        
+        // ================= 总览功能 =================
+        function renderOverview() {
+            const today = formatDate(new Date());
+            const todayTasks = state.tasks.filter(t => t.date === today && !t.done);
+            const doneTasks = state.tasks.filter(t => t.date === today && t.done);
+            $('statTodo').textContent = todayTasks.length;
+            $('statDone').textContent = doneTasks.length;
+            const recentScore = [...state.scores].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+            if (recentScore) {
+                const total = (parseInt(recentScore.math) || 0) + (parseInt(recentScore.english) || 0) + 
+                             (parseInt(recentScore.politics) || 0) + (parseInt(recentScore.major) || 0);
+                $('statScore').textContent = total;
+            } else {
+                $('statScore').textContent = '--';
+            }
+            $('statStatus').textContent = {
+                'not-started': '未开始',
+                'active': '进行中',
+                'paused': '已暂停'
+            }[state.prepStatus] || '未开始';
+            renderTaskList();
+            updatePrepControls();
+        }
+        
+        function renderTaskList() {
+            const today = formatDate(new Date());
+            // 先检查是否需要自动刷新任务（每天第一次打开时）
+            autoRefreshTasks();
+            
+            // 分离已完成和未完成任务
+            const undoneTasks = state.tasks.filter(t => t.date === today && !t.done).sort((a, b) => {
+                const p = {高: 0, 中: 1, 低: 2};
+                return p[a.priority] - p[b.priority];
+            });
+            const doneTasks = state.tasks.filter(t => t.date === today && t.done);
+            
+            let html = '';
+            
+            // 未完成任务栏
+            html += '<div style="margin-bottom:20px;">';
+            html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">';
+            html += '<h4 style="color:var(--accent); display:flex; align-items:center; gap:8px;">';
+            html += '<i class="fas fa-circle-dot"></i> 待完成任务 (' + undoneTasks.length + ')';
+            html += '</h4>';
+            if (undoneTasks.length > 0) {
+                html += '<button class="btn btn-danger btn-sm" onclick="showDeleteConfirm(\'deleteTodayUndoneTasks\', \'确定要删除今日所有待完成任务吗？\')"><i class="fas fa-trash"></i> 一键删除</button>';
+            }
+            html += '</div>';
+            
+            if (!undoneTasks.length) {
+                html += '<div style="color:var(--muted); text-align:center; padding:16px; background:var(--surface-soft); border-radius:8px;">';
+                html += '暂无待完成任务，点击上方按钮添加新任务';
+                html += '</div>';
+            } else {
+                html += undoneTasks.map(t => `
+                    <div class="task-item" style="${t.isReview ? 'border-left:3px solid var(--warn)' : ''}">
+                        <div>
+                            <label style="display:flex; align-items:center; gap:8px;">
+                                <input type="checkbox" ${t.done ? 'checked' : ''} onclick="toggleTask('${t.id}')" />
+                                <span>${t.title}</span>
+                                ${t.isReview ? '<span class="badge badge-warn" style="font-size:10px;">复习</span>' : ''}
+                            </label>
+                            <div class="task-meta">
+                                <span class="badge badge-${t.subject}">${t.subject}</span>
+                                <span>优先级: ${t.priority}</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')"><i class="fas fa-trash"></i> 删除</button>
+                    </div>
+                `).join('');
+            }
+            html += '</div>';
+            
+            // 已完成任务栏
+            html += '<div>';
+            html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">';
+            html += '<h4 style="color:var(--muted); display:flex; align-items:center; gap:8px;">';
+            html += '<i class="fas fa-check-circle"></i> 已完成任务 (' + doneTasks.length + ')';
+            html += '</h4>';
+            if (doneTasks.length > 0) {
+                html += '<button class="btn btn-danger btn-sm" onclick="showDeleteConfirm(\'deleteTodayDoneTasks\', \'确定要删除今日所有已完成任务吗？\')"><i class="fas fa-trash"></i> 一键删除</button>';
+            }
+            html += '</div>';
+            
+            if (!doneTasks.length) {
+                html += '<div style="color:var(--muted); text-align:center; padding:16px; background:#f8faf9; border-radius:8px;">';
+                html += '今日暂无已完成任务';
+                html += '</div>';
+            } else {
+                html += doneTasks.map(t => `
+                    <div class="task-item done">
+                        <div>
+                            <label style="display:flex; align-items:center; gap:8px;">
+                                <input type="checkbox" checked onclick="toggleTask('${t.id}')" />
+                                <span style="text-decoration:line-through; color:var(--muted)">${t.title}</span>
+                            </label>
+                            <div class="task-meta">
+                                <span class="badge badge-${t.subject}" style="opacity:0.6;">${t.subject}</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')"><i class="fas fa-trash"></i> 删除</button>
+                    </div>
+                `).join('');
+            }
+            html += '</div>';
+            
+            $('taskList').innerHTML = html;
+        }
+        
+        // 自动刷新任务：每天第一次打开时执行
+        function autoRefreshTasks() {
+            const today = formatDate(new Date());
+            const lastRefresh = state.lastTaskRefresh || '';
+            
+            if (lastRefresh === today) return; // 今天已经刷新过
+            
+            // 将未完成的任务移到今天
+            const yesterday = formatDate(new Date(Date.now() - 24 * 60 * 60 * 1000));
+            state.tasks.forEach(t => {
+                // 如果任务日期是昨天且未完成，移到今天
+                if (t.date === yesterday && !t.done) {
+                    t.date = today;
+                }
+            });
+            
+            state.lastTaskRefresh = today;
+            saveState();
+        }
+        
+        // 遗忘曲线复习间隔（第1、3、7天）
+        const CURVE_INTERVALS = [1, 3, 7];
+        
+        window.toggleTask = function (id) {
+            const t = state.tasks.find(x => x.id === id);
+            if (t) {
+                t.done = !t.done;
+                
+                // 如果任务完成且开启了遗忘曲线，创建复习任务
+                if (t.done && t.useCurve) {
+                    createCurveReviewTasks(t);
+                }
+                
+                saveState();
+                renderOverview();
+            }
+        };
+        
+        // 创建遗忘曲线复习任务
+        function createCurveReviewTasks(task) {
+            const baseDate = new Date(task.date);
+            CURVE_INTERVALS.forEach(days => {
+                const reviewDate = new Date(baseDate);
+                reviewDate.setDate(reviewDate.getDate() + days);
+                
+                // 检查是否已存在相同的复习任务
+                const exists = state.tasks.some(t => 
+                    t.title === task.title && 
+                    t.date === formatDate(reviewDate) && 
+                    t.isReview
+                );
+                
+                if (!exists) {
+                    state.tasks.push({
+                        id: uid(),
+                        title: task.title,
+                        subject: task.subject,
+                        priority: task.priority,
+                        date: formatDate(reviewDate),
+                        done: false,
+                        useCurve: false,
+                        isReview: true,
+                        originalId: task.id
+                    });
+                }
+            });
+        }
+        
+        // 创建任务对话框
+        window.openTaskDialog = function (id = null) {
+            const form = $('taskForm');
+            form.reset();
+            form.querySelector('[name=id]').value = '';
+            form.querySelector('[name=date]').value = formatDate(new Date());
+            if (id) {
+                const t = state.tasks.find(x => x.id === id);
+                if (t) fillForm(form, t);
+            }
+            $('taskDialog').showModal();
+        };
+        
+        window.deleteTask = function (id) {
+            if (!confirm('确定删除此任务？')) return;
+            state.tasks = state.tasks.filter(x => x.id !== id);
+            saveState();
+            renderOverview();
+        };
+        
+        $('taskForm').onsubmit = (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const data = Object.fromEntries(fd.entries());
+            data.done = false;
+            data.useCurve = fd.get('useCurve') === '1';
+            if (!data.id) {
+                data.id = uid();
+                state.tasks.push(data);
+            } else {
+                const idx = state.tasks.findIndex(x => x.id === data.id);
+                if (idx >= 0) state.tasks[idx] = { ...state.tasks[idx], ...data };
+            }
+            saveState();
+            $('taskDialog').close();
+            renderOverview();
+        };
+        
+        // ================= 备考状态控制 =================
+        function updatePrepControls() {
+            const btns = {
+                'not-started': ['btnStartPrep'],
+                'active': ['btnPausePrep', 'btnExitPrep'],
+                'paused': ['btnResumePrep', 'btnExitPrep'],
+                'exited': ['btnStartPrep']
+            };
+            ['btnStartPrep', 'btnPausePrep', 'btnResumePrep', 'btnExitPrep'].forEach(id => $(id).style.display = 'none');
+            btns[state.prepStatus]?.forEach(id => $(id).style.display = 'block');
+        }
+        
+        // 显示状态设置对话框
+        window.showStatusDialog = function () {
+            updateStatusDialog();
+            $('statusDialog').showModal();
+        };
+        
+        // 状态标签映射
+        function statusLabel(status) {
+            return {
+                'not-started': '未开始',
+                'active': '正在备考',
+                'paused': '已暂停',
+                'exited': '已退出'
+            }[status] || '未开始';
+        }
+        
+        // 更新状态对话框显示
+        function updateStatusDialog() {
+            const indicator = $('statusIndicator');
+            const statusText = $('currentStatusText');
+            
+            // 更新状态文本
+            statusText.textContent = statusLabel(state.prepStatus);
+            
+            // 更新状态指示器颜色
+            indicator.style.background = {
+                'not-started': 'var(--muted)',
+                'active': 'var(--accent)',
+                'paused': 'var(--warn)',
+                'exited': 'var(--danger)'
+            }[state.prepStatus] || 'var(--muted)';
+            
+            // 根据当前状态显示/隐藏按钮
+            $('statusBtnStart').style.display = (state.prepStatus === 'not-started' || state.prepStatus === 'exited') ? 'block' : 'none';
+            $('statusBtnPause').style.display = state.prepStatus === 'active' ? 'block' : 'none';
+            $('statusBtnResume').style.display = state.prepStatus === 'paused' ? 'block' : 'none';
+            $('statusBtnRestart').style.display = state.prepStatus === 'exited' ? 'block' : 'none';
+            $('statusBtnExit').style.display = (state.prepStatus === 'active' || state.prepStatus === 'paused') ? 'block' : 'none';
+        }
+        
+        // 开始备考
+        window.statusStart = function () {
+            state.prepStart = state.prepStart || formatDate(new Date());
+            state.prepStatus = 'active';
+            saveState();
+            updateStatusDialog();
+            updatePrepControls();
+            renderOverview();
+            alert('已开始备考，加油！');
+        };
+        
+        // 暂停备考
+        window.statusPause = function () {
+            state.prepStatus = 'paused';
+            saveState();
+            updateStatusDialog();
+            updatePrepControls();
+            renderOverview();
+            alert('已暂停备考');
+        };
+        
+        // 继续备考
+        window.statusResume = function () {
+            state.prepStatus = 'active';
+            saveState();
+            updateStatusDialog();
+            updatePrepControls();
+            renderOverview();
+            alert('已继续备考');
+        };
+        
+        // 重新开始（从已退出状态）
+        window.statusRestart = function () {
+            state.prepStart = formatDate(new Date());
+            state.prepStatus = 'active';
+            saveState();
+            updateStatusDialog();
+            updatePrepControls();
+            renderOverview();
+            alert('已重新开始备考，加油！');
+        };
+        
+        // ================= 统一删除确认功能 =================
+        let pendingDeleteAction = null;
+        
+        // 显示删除确认对话框
+        window.showDeleteConfirm = function (action, message) {
+            pendingDeleteAction = action;
+            $('deleteConfirmMessage').textContent = message || '确定要删除吗？此操作不可恢复！';
+            // 重置为第一次确认状态
+            $('deleteFirstConfirm').style.display = 'flex';
+            $('deleteSecondConfirm').style.display = 'none';
+            $('deleteConfirmDialog').showModal();
+        };
+        
+        // 显示第二次确认
+        window.showSecondConfirm = function () {
+            $('deleteFirstConfirm').style.display = 'none';
+            $('deleteSecondConfirm').style.display = 'block';
+        };
+        
+        // 关闭删除确认对话框
+        window.closeDeleteConfirm = function () {
+            pendingDeleteAction = null;
+            // 重置为第一次确认状态
+            $('deleteFirstConfirm').style.display = 'flex';
+            $('deleteSecondConfirm').style.display = 'none';
+            $('deleteConfirmDialog').close();
+        };
+        
+        // 确认删除操作
+        window.confirmDelete = function () {
+            if (!pendingDeleteAction) return;
+            
+            const today = formatDate(new Date());
+            
+            switch (pendingDeleteAction) {
+                // 删除所有数据
+                case 'deleteAllData':
+                    // 清空所有数据
+                    state.tasks = [];
+                    state.timelines = [];
+                    state.mistakes = [];
+                    state.notes = [];
+                    state.resources = [];
+                    state.papers = [];
+                    state.scores = [];
+                    state.reviews = [];
+                    state.schools = [];
+                    state.prepStatus = 'not-started';
+                    state.prepStart = '';
+                    state.lastTaskRefresh = '';
+                    renderOverview();
+                    renderTimeline();
+                    refreshRecords('mistakes');
+                    refreshRecords('notes');
+                    refreshRecords('resources');
+                    renderPapers();
+                    renderScores();
+                    renderReview();
+                    renderSchools();
+                    updatePrepControls();
+                    alert('已删除所有数据');
+                    break;
+                    
+                // 删除今日待完成任务
+                case 'deleteTodayUndoneTasks':
+                    state.tasks = state.tasks.filter(t => !(t.date === today && !t.done));
+                    saveState();
+                    renderTaskList();
+                    alert('已删除今日所有待完成任务');
+                    break;
+                    
+                // 删除今日已完成任务
+                case 'deleteTodayDoneTasks':
+                    state.tasks = state.tasks.filter(t => !(t.date === today && t.done));
+                    saveState();
+                    renderTaskList();
+                    alert('已删除今日所有已完成任务');
+                    break;
+                    
+                // 删除所有时间阶段
+                case 'deleteAllTimelines':
+                    state.timelines = [];
+                    saveState();
+                    renderTimeline();
+                    alert('已删除所有阶段');
+                    break;
+                    
+                // 删除所有错题
+                case 'deleteAllMistakes':
+                    state.mistakes = [];
+                    saveState();
+                    refreshRecords('mistakes');
+                    alert('已删除所有错题');
+                    break;
+                    
+                // 删除所有学习笔记
+                case 'deleteAllNotes':
+                    state.notes = [];
+                    saveState();
+                    refreshRecords('notes');
+                    alert('已删除所有学习笔记');
+                    break;
+                    
+                // 删除所有电子资料
+                case 'deleteAllResources':
+                    state.resources = [];
+                    saveState();
+                    refreshRecords('resources');
+                    alert('已删除所有电子资料');
+                    break;
+                    
+                // 删除所有试卷
+                case 'deleteAllPapers':
+                    state.papers = [];
+                    saveState();
+                    renderPapers();
+                    alert('已删除所有试卷');
+                    break;
+                    
+                // 删除所有成绩
+                case 'deleteAllScores':
+                    state.scores = [];
+                    saveState();
+                    renderScores();
+                    alert('已删除所有成绩记录');
+                    break;
+                    
+                // 删除所有复盘
+                case 'deleteAllReviews':
+                    state.reviews = [];
+                    saveState();
+                    renderReview();
+                    alert('已删除所有复盘记录');
+                    break;
+                    
+                // 删除所有院校
+                case 'deleteAllSchools':
+                    state.schools = [];
+                    saveState();
+                    renderSchools();
+                    alert('已删除所有院校');
+                    break;
+            }
+            
+            closeDeleteConfirm();
+        };
+        
+        // 从状态对话框打开结束确认
+        window.showExitConfirmFromStatus = function () {
+            $('statusDialog').close();
+            $('exitConfirmDialog').showModal();
+        };
+        
+        function togglePrep(status) {
+            state.prepStatus = status;
+            if (status === 'active' && !state.prepStart) {
+                state.prepStart = new Date().toISOString();
+            }
+            saveState();
+            updatePrepControls();
+            renderOverview();
+        }
+        
+        // 显示结束备考确认对话框
+        window.showExitConfirm = function () {
+            $('exitConfirmDialog').showModal();
+        };
+        
+        function exitPrep(clearData = false) {
+            $('exitConfirmDialog').close();
+            
+            if (clearData) {
+                // 清空所有数据并重置状态
+                state.prepStatus = 'not-started';
+                state.prepStart = '';
+                state.tasks = [];
+                state.timelines = [];
+                state.mistakes = [];
+                state.notes = [];
+                state.resources = [];
+                state.papers = [];
+                state.scores = [];
+                state.reviews = [];
+                state.schools = [];
+                alert('已清空所有数据并重置');
+            } else {
+                // 保留数据，标记为已退出
+                state.prepStatus = 'exited';
+                alert('已结束备考，数据已保留');
+            }
+            
+            saveState();
+            updatePrepControls();
+            renderOverview();
+        }
+        
+        // ================= 提醒功能 =================
+        // EmailJS 初始化配置
+        const EMAILJS_PUBLIC_KEY = 'VinqbmtDZS0qGEpfY';
+        const EMAILJS_SERVICE_ID = 'service_pvrvd4l';
+        const EMAILJS_TEMPLATE_TASK = 'template_2k3nmeq';
+        const EMAILJS_TEMPLATE_REVIEW = 'template_2k3nmeq';
+
+        // 初始化EmailJS
+        (function initEmailJS() {
+            if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+                emailjs.init(EMAILJS_PUBLIC_KEY);
+            }
+        })();
+
+        // 发送邮件底层逻辑
+        function sendReminderEmail(toEmail, subject, content) {
+            if (!toEmail || !state.reminderSettings?.enabled) return;
+            if (typeof emailjs === 'undefined' || EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
+                console.warn('EmailJS未配置，邮件发送跳过');
+                return;
+            }
+            const templateParams = {
+                to_email: toEmail,
+                subject: subject,
+                message: content
+            };
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_TASK, templateParams)
+                .then(() => { console.log('邮件发送成功:', subject); })
+                .catch(err => { console.error('邮件发送失败:', err); });
+        }
+
+        // 显示提醒设置对话框
+        window.showReminderSettings = function () {
+            const settings = state.reminderSettings || {
+                enabled: false,
+                morning: '06:00',
+                noon: '12:00',
+                evening: '20:00',
+                tasks: true,
+                review: true,
+                special: true,
+                restDayMode: 'auto',
+                customRestDays: [],
+                email: ''
+            };
+            
+            $('reminderEnabled').checked = settings.enabled;
+            $('reminderMorning').value = settings.morning;
+            $('reminderNoon').value = settings.noon;
+            $('reminderEvening').value = settings.evening;
+            $('reminderTasks').checked = settings.tasks;
+            $('reminderReview').checked = settings.review;
+            $('reminderSpecial').checked = settings.special;
+            $('restDayMode').value = settings.restDayMode;
+            $('reminderEmail').value = settings.email || '';
+            $('syncSavePath').value = settings.syncFolderName || '';
+            
+            // 显示/隐藏自定义休息日
+            $('customRestDays').style.display = settings.restDayMode === 'custom' ? 'block' : 'none';
+            
+            // 设置自定义休息日勾选
+            document.querySelectorAll('input[name="restDay"]').forEach(el => {
+                el.checked = settings.customRestDays.includes(parseInt(el.value));
+            });
+            
+            $('reminderDialog').showModal();
+        };
+        
+        // 休息日模式切换
+        document.addEventListener('DOMContentLoaded', () => {
+            $('restDayMode')?.addEventListener('change', function() {
+                $('customRestDays').style.display = this.value === 'custom' ? 'block' : 'none';
+            });
+        });
+        
+        // 保存提醒设置
+        window.saveReminderSettings = function () {
+            const customRestDays = Array.from(document.querySelectorAll('input[name="restDay"]:checked'))
+                .map(el => parseInt(el.value));
+            
+            state.reminderSettings = {
+                enabled: $('reminderEnabled').checked,
+                morning: $('reminderMorning').value,
+                noon: $('reminderNoon').value,
+                evening: $('reminderEvening').value,
+                tasks: $('reminderTasks').checked,
+                review: $('reminderReview').checked,
+                special: $('reminderSpecial').checked,
+                restDayMode: $('restDayMode').value,
+                customRestDays: customRestDays,
+                email: $('reminderEmail').value.trim(),
+                syncFolderName: $('syncSavePath').value.trim()
+            };
+            
+            saveState();
+            
+            // 如果开启提醒，初始化定时任务
+            if (state.reminderSettings.enabled) {
+                setupReminders();
+            }
+            
+            $('reminderDialog').close();
+            alert('提醒设置已保存');
+        };
+        
+        // 判断是否是休息日
+        function isRestDay(date = new Date()) {
+            const settings = state.reminderSettings || {};
+            const dayOfWeek = date.getDay(); // 0=周日, 6=周六
+            
+            if (settings.restDayMode === 'custom') {
+                return settings.customRestDays?.includes(dayOfWeek) || false;
+            }
+            
+            // 自动模式：5天学习2天休息，默认周六日休息
+            return dayOfWeek === 0 || dayOfWeek === 6;
+        }
+        
+        // 测试邮件发送
+        window.testReminderEmail = function () {
+            const email = $('reminderEmail').value.trim();
+            if (!email) {
+                alert('请先输入邮箱地址！');
+                return;
+            }
+            const today = formatDate(new Date());
+            const tasks = state.tasks.filter(t => t.date === today && !t.done);
+            const taskList = tasks.length > 0
+                ? tasks.map(t => t.title).join('\n')
+                : '（当前没有未完成任务，这是测试邮件）';
+            const subject = '今日未完成任务提醒（测试）';
+            const body = `主人主人，今天您还有以下任务还没有完成哦！！！小研会继续默默的督促主人哒(ฅ´ωฅ)\n\n${taskList}`;
+            
+            if (typeof emailjs === 'undefined') {
+                alert('EmailJS SDK 未加载，请检查网络连接');
+                return;
+            }
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_TASK, {
+                to_email: email,
+                subject: subject,
+                message: body
+            }).then(() => {
+                alert('测试邮件发送成功！请检查邮箱：' + email);
+            }).catch(err => {
+                alert('邮件发送失败：' + (err.text || err.message || JSON.stringify(err)));
+            });
+        };
+        
+        // ===== 数据同步保存路径管理（File System Access API）=====
+        const SYNC_DB_NAME = 'YantuSyncDB';
+        const SYNC_STORE_NAME = 'dirHandles';
+
+        function openSyncDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(SYNC_DB_NAME, 1);
+                req.onupgradeneeded = () => req.result.createObjectStore(SYNC_STORE_NAME);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function saveDirHandle(handle) {
+            const db = await openSyncDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(SYNC_STORE_NAME, 'readwrite');
+                tx.objectStore(SYNC_STORE_NAME).put(handle, 'syncDir');
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        async function getDirHandle() {
+            const db = await openSyncDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(SYNC_STORE_NAME, 'readonly');
+                const req = tx.objectStore(SYNC_STORE_NAME).get('syncDir');
+                req.onsuccess = () => resolve(req.result || null);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function verifyDirPermission(handle) {
+            if (!handle) return false;
+            try {
+                if ((await handle.queryPermission({ mode: 'readwrite' })) === 'granted') return true;
+                return (await handle.requestPermission({ mode: 'readwrite' })) === 'granted';
+            } catch { return false; }
+        }
+
+        // 选择同步保存文件夹
+        window.selectSyncFolder = async function () {
+            if (!window.showDirectoryPicker) {
+                alert('当前浏览器不支持文件夹选择功能，请使用 Chrome 或 Edge 浏览器');
+                return;
+            }
+            try {
+                const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                await saveDirHandle(handle);
+                $('syncSavePath').value = handle.name;
+                state.reminderSettings = state.reminderSettings || {};
+                state.reminderSettings.syncFolderName = handle.name;
+                saveState();
+                alert('保存路径设置成功：' + handle.name);
+            } catch (e) {
+                if (e.name !== 'AbortError') alert('选择文件夹失败：' + e.message);
+            }
+        };
+
+        // 自动写入文件到已配置的目录
+        async function autoSaveSyncFile(compressed, fileName) {
+            const handle = await getDirHandle();
+            if (!handle) return false;
+            const permitted = await verifyDirPermission(handle);
+            if (!permitted) return false;
+            try {
+                const fileHandle = await handle.getFileHandle(fileName, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(compressed);
+                await writable.close();
+                return true;
+            } catch (e) {
+                console.error('自动保存失败:', e);
+                return false;
+            }
+        }
+
+        // 测试数据同步邮件
+        window.testSyncEmail = function () {
+            const email = $('reminderEmail').value.trim();
+            if (!email) {
+                alert('请先输入邮箱地址！');
+                return;
+            }
+            
+            // 生成并下载txt文件
+            const { compressed, today } = downloadSyncTxtFile();
+            
+            const subject = `研途备考数据同步 - ${today}（测试）`;
+            const body = `主人~，这是今日的备考数据同步备份哦\n\n导出时间：${new Date().toLocaleString()}\n设备ID：${state.deviceId}\n\n【使用说明】\n1. 复制下方【同步数据】与【结束标记】之间的所有内容\n2. 在另一台设备上打开研途备考助手\n3. 进入数据管理 → 导入数据\n4. 粘贴内容即可恢复数据\n\n【同步数据】\n${compressed}\n【结束标记】`;
+            
+            if (typeof emailjs === 'undefined') {
+                alert('EmailJS SDK 未加载，请检查网络连接');
+                return;
+            }
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_TASK, {
+                to_email: email,
+                subject: subject,
+                message: body
+            }).then(() => {
+                alert('数据同步邮件发送成功！txt文件已下载，请检查邮箱：' + email);
+            }).catch(err => {
+                alert('邮件发送失败：' + (err.text || err.message || JSON.stringify(err)));
+            });
+        };
+
+        // 判断是否需要发送提醒（休息日但有任务时仍发送）
+        function shouldSendReminder() {
+            const settings = state.reminderSettings || {};
+            if (!settings.enabled) return false;
+            
+            // 如果不是休息日，发送提醒
+            if (!isRestDay()) return true;
+            
+            // 休息日：检查是否有未完成任务
+            const today = formatDate(new Date());
+            const undoneTasks = state.tasks.filter(t => t.date === today && !t.done);
+            return undoneTasks.length > 0;
+        }
+        
+        // 设置提醒定时器
+        function setupReminders() {
+            const settings = state.reminderSettings || {};
+            
+            // 清除现有定时器
+            if (window.reminderTimer) clearInterval(window.reminderTimer);
+            
+            if (!settings.enabled) return;
+            
+            // 记录已发送的提醒，防止同一分钟重复发送
+            const sentReminders = {};
+            
+            // 每分钟检查一次
+            window.reminderTimer = setInterval(() => {
+                const now = new Date();
+                const currentTime = now.toTimeString().slice(0, 5);
+                const dateKey = formatDate(now);
+                
+                // 检查三次任务提醒时间（上午6:00、下午12:00、晚上22:00）
+                if ([settings.morning, settings.noon, settings.evening].includes(currentTime)) {
+                    const reminderKey = `task_${dateKey}_${currentTime}`;
+                    if (!sentReminders[reminderKey] && shouldSendReminder() && settings.tasks) {
+                        sentReminders[reminderKey] = true;
+                        sendTaskReminder();
+                    }
+                }
+                
+                // 复盘提醒（21:00）
+                if (currentTime === '21:00') {
+                    const reminderKey = `review_${dateKey}`;
+                    if (!sentReminders[reminderKey] && settings.review) {
+                        sentReminders[reminderKey] = true;
+                        sendReviewReminder();
+                    }
+                }
+                
+                // 特殊日期提醒
+                if (settings.special) {
+                    const reminderKey = `special_${dateKey}`;
+                    if (!sentReminders[reminderKey]) {
+                        sentReminders[reminderKey] = true;
+                        checkSpecialDates();
+                    }
+                }
+                
+                // 每日数据同步（23:00）
+                if (currentTime === '23:00') {
+                    const reminderKey = `sync_${dateKey}`;
+                    if (!sentReminders[reminderKey] && settings.email) {
+                        sentReminders[reminderKey] = true;
+                        sendDailySyncEmail();
+                    }
+                }
+            }, 60000);
+        }
+        
+        // 发送任务提醒
+        function sendTaskReminder() {
+            const today = formatDate(new Date());
+            const tasks = state.tasks.filter(t => t.date === today && !t.done);
+            
+            if (tasks.length === 0) return;
+            
+            const taskList = tasks.map(t => t.title).join('\n');
+            const subject = '今日未完成任务提醒';
+            const body = `主人主人，今天您还有以下任务还没有完成哦！！！小研会继续默默的督促主人哒(ฅ´ωฅ)\n\n${taskList}`;
+            
+            // 发送浏览器通知
+            sendNotification(subject, body);
+            
+            // 发送邮件提醒
+            const email = state.reminderSettings?.email;
+            if (email) {
+                sendReminderEmail(email, subject, body);
+            }
+        }
+        
+        // 发送复盘提醒
+        function sendReviewReminder() {
+            const subject = '今日复盘提醒';
+            const body = '主人~，今日复盘任务有没有完成啊，记得完成今日复盘哦(ฅ´ωฅ)`';
+            
+            // 发送浏览器通知
+            sendNotification(subject, body);
+            
+            // 发送邮件提醒
+            const email = state.reminderSettings?.email;
+            if (email) {
+                sendReminderEmail(email, subject, body);
+            }
+        }
+        
+        // 生成同步数据txt文本并触发下载
+        function downloadSyncTxtFile() {
+            const data = {
+                version: 1,
+                deviceId: state.deviceId,
+                exportTime: new Date().toISOString(),
+                state: {
+                    prepStatus: state.prepStatus,
+                    prepStart: state.prepStart,
+                    tasks: state.tasks,
+                    calendarEvents: state.calendarEvents,
+                    timelines: state.timelines,
+                    mistakes: state.mistakes,
+                    notes: state.notes,
+                    resources: state.resources,
+                    papers: state.papers,
+                    scores: state.scores,
+                    reviews: state.reviews,
+                    schools: state.schools
+                }
+            };
+            const compressed = LZString.compressToBase64(JSON.stringify(data));
+            const today = formatDate(new Date());
+            const fileName = `研途备考数据同步_${today}.txt`;
+            const blob = new Blob([compressed], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            return { compressed, today, fileName };
+        }
+
+        // 每日数据同步邮件（23:00）
+        async function sendDailySyncEmail() {
+            const email = state.reminderSettings?.email;
+            
+            // 生成同步数据
+            const data = {
+                version: 1,
+                deviceId: state.deviceId,
+                exportTime: new Date().toISOString(),
+                state: {
+                    prepStatus: state.prepStatus,
+                    prepStart: state.prepStart,
+                    tasks: state.tasks,
+                    calendarEvents: state.calendarEvents,
+                    timelines: state.timelines,
+                    mistakes: state.mistakes,
+                    notes: state.notes,
+                    resources: state.resources,
+                    papers: state.papers,
+                    scores: state.scores,
+                    reviews: state.reviews,
+                    schools: state.schools
+                }
+            };
+            const compressed = LZString.compressToBase64(JSON.stringify(data));
+            const today = formatDate(new Date());
+            const fileName = `研途备考数据同步_${today}.txt`;
+            
+            // 优先尝试自动保存到配置目录
+            const autoSaved = await autoSaveSyncFile(compressed, fileName);
+            if (autoSaved) {
+                console.log('数据已自动保存到配置目录');
+            } else if (state.reminderSettings?.syncFolderName) {
+                // 配置了路径但权限失效，回退到普通下载
+                console.log('目录权限已失效，回退到普通下载');
+                const blob = new Blob([compressed], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = fileName;
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a); URL.revokeObjectURL(url);
+            }
+            
+            // 发送邮件备份
+            if (email && typeof emailjs !== 'undefined') {
+                const subject = `研途备考数据同步 - ${today}`;
+                const body = `主人~，这是今日的备考数据同步备份哦\n\n导出时间：${new Date().toLocaleString()}\n设备ID：${state.deviceId}\n\n【使用说明】\n1. 复制下方【同步数据】与【结束标记】之间的所有内容\n2. 在另一台设备上打开研途备考助手\n3. 进入数据管理 → 导入数据\n4. 粘贴内容即可恢复数据\n\n【同步数据】\n${compressed}\n【结束标记】`;
+                emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_TASK, {
+                    to_email: email,
+                    subject: subject,
+                    message: body
+                }).then(() => { console.log('数据同步邮件发送成功'); })
+                  .catch(err => { console.error('数据同步邮件发送失败:', err); });
+            }
+        }
+
+        // 检查特殊日期
+        function checkSpecialDates() {
+            const today = new Date();
+            const month = today.getMonth() + 1;
+            const day = today.getDate();
+            
+            // 考研相关特殊日期
+            const specialDates = [
+                { month: 9, day: 24, title: '考研预报名', desc: '考研预报名开始' },
+                { month: 10, day: 10, title: '考研正式报名', desc: '考研正式报名开始' },
+                { month: 11, day: 10, title: '报名确认', desc: '考研报名确认开始' },
+                { month: 12, day: 14, title: '准考证打印', desc: '准考证开始打印' },
+                { month: 12, day: 21, title: '考研初试', desc: '考研初试开始！' }
+            ];
+            
+            const matched = specialDates.find(d => d.month === month && d.day === day);
+            if (matched) {
+                sendNotification(matched.title, matched.desc);
+            }
+        }
+        
+        // 发送通知
+        function sendNotification(title, body) {
+            // 浏览器通知API
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(title, { body });
+            } else if ('Notification' in window && Notification.permission !== 'denied') {
+                Notification.requestPermission().then(perm => {
+                    if (perm === 'granted') {
+                        new Notification(title, { body });
+                    }
+                });
+            }
+            
+            // 备用提醒方式（alert）
+            alert(`${title}\n${body}`);
+        }
+        
+        // 页面加载时初始化提醒
+        document.addEventListener('DOMContentLoaded', () => {
+            if (state.reminderSettings?.enabled) {
+                setupReminders();
+            }
+        });
+        
+        // ================= 数据导出导入 =================
+        function exportData() {
+            const data = {
+                version: 1,
+                deviceId: state.deviceId,
+                exportTime: new Date().toISOString(),
+                state: {
+                    prepStatus: state.prepStatus,
+                    prepStart: state.prepStart,
+                    tasks: state.tasks,
+                    calendarEvents: state.calendarEvents,
+                    timelines: state.timelines,
+                    mistakes: state.mistakes,
+                    notes: state.notes,
+                    resources: state.resources,
+                    papers: state.papers,
+                    scores: state.scores,
+                    reviews: state.reviews,
+                    schools: state.schools
+                }
+            };
+            const compressed = LZString.compressToBase64(JSON.stringify(data));
+            const blob = new Blob([compressed], { type: 'text/plain' });
+            downloadBlob('kaoyan-data.txt', blob);
+        }
+        
+        function downloadBlob(name, blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function fillForm(form, data) {
+            Object.keys(data).forEach(key => {
+                const el = form.querySelector(`[name="${key}"]`);
+                if (el) el.value = data[key];
+            });
+        }
+        
+        // ================= 数据导入功能 =================
+        // 显示导入对话框
+        window.showImportDialog = function () {
+            $('importDataInput').value = '';
+            $('importFileInput').value = '';
+            $('importDialog').showModal();
+        };
+        
+        // 处理文件上传导入
+        window.handleImportFile = function (fileInput) {
+            const file = fileInput.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const content = e.target.result.trim();
+                $('importDataInput').value = content;
+                // 自动触发导入
+                importData();
+            };
+            reader.onerror = function () {
+                alert('文件读取失败，请重试');
+            };
+            reader.readAsText(file);
+        };
+        
+        // 导入数据
+        window.importData = function () {
+            const input = $('importDataInput').value.trim();
+            if (!input) {
+                alert('请输入要导入的数据');
+                return;
+            }
+            try {
+                const decompressed = LZString.decompressFromBase64(input);
+                const importData = JSON.parse(decompressed);
+                
+                if (!importData.state) {
+                    alert('无效的数据格式');
+                    return;
+                }
+                
+                // 合并数据
+                Object.keys(importData.state).forEach(key => {
+                    if (Array.isArray(importData.state[key]) && Array.isArray(state[key])) {
+                        const existingIds = new Set(state[key].map(item => item.id));
+                        importData.state[key].forEach(item => {
+                            if (!existingIds.has(item.id)) {
+                                state[key].push(item);
+                            }
+                        });
+                    }
+                });
+                
+                saveState();
+                alert('数据导入成功！');
+                $('importDialog').close();
+                renderOverview();
+            } catch (e) {
+                alert('导入失败：' + e.message);
+            }
+        };
+        
+        function formatDate(date) {
+            return date.toISOString().slice(0, 10);
+        }
+        
+        // ================= 倒计时 =================
+        function updateCountdown() {
+            const year = parseInt($('examYear').value);
+            const examDate = new Date(year, 11, 21);
+            const now = new Date();
+            const diff = Math.ceil((examDate - now) / (1000 * 60 * 60 * 24));
+            $('countdownDays').textContent = diff >= 0 ? diff : 0;
+            $('examDateText').textContent = `${year}年12月21日`;
+            state.examYear = year;
+            saveState();
+        }
+        
+        $('examYear').addEventListener('change', updateCountdown);
+        
+        // ================= 初始化 =================
+        document.addEventListener('DOMContentLoaded', () => {
+            initSidebar();
+            updateCountdown();
+            renderOverview();
+            updatePrepControls();
+        });
+    </script>
+</body>
+</html>
